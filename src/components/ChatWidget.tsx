@@ -44,7 +44,8 @@ ${contextText ? `Voici le contexte actuel de l'étudiant (le défi en cours, ou 
       
       setMessages(prev => [...prev, { role: 'assistant', text: response.feedback }]);
     } catch (error: any) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "Désolé, je n'ai pas pu joindre le serveur IA. Vérifiez votre clé API.", isError: true }]);
+      console.error("Gemini Chat Widget Error:", error);
+      setMessages(prev => [...prev, { role: 'assistant', text: `Erreur lors de la communication avec l'IA: ${error.message || error}`, isError: true }]);
     } finally {
       setIsLoading(false);
     }

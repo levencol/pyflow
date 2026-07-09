@@ -12,7 +12,7 @@ export async function evaluateCodeWithGemini(
   userCode: string,
   localResult: PythonRunResult
 ): Promise<GeminiEvaluationResult | null> {
-  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  const apiKey = (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined) || import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
     console.warn("No GEMINI_API_KEY configured. Fallback to local rule-based validator.");
     return null;
@@ -52,7 +52,7 @@ ${userCode}
 5. **Mise en forme et Espacement** : Rédigez l'explication en utilisant des paragraphes aérés et des listes à puces Markdown (ex: \`1.\`, \`2.\` ou \`-\`). Mettez obligatoirement un double retour à la ligne entre vos paragraphes. Veillez à TOUJOURS insérer un espace après chaque point de ponctuation (par exemple : après '.', '!', ':', ou ','). N'accolez jamais de mots sans espace après une ponctuation (ex: écrivez 'essentielle ! Cependant' au lieu de 'essentielle!Cependant'). Utilisez des backticks (\`code\`) autour des noms de variables, fonctions et expressions (ex: \`largeur\`).`;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -79,7 +79,8 @@ ${userCode}
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API HTTP error: ${response.status}`);
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`HTTP error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -97,7 +98,7 @@ ${userCode}
 }
 
 export async function analyzeCodeWithGemini(systemPrompt: string, userMessage: string): Promise<{ feedback: string }> {
-  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  const apiKey = (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined) || import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
     return { feedback: "Clé d'API Gemini non configurée." };
   }
@@ -105,7 +106,7 @@ export async function analyzeCodeWithGemini(systemPrompt: string, userMessage: s
   const prompt = `${systemPrompt}\n\nQuestion de l'étudiant:\n${userMessage}`;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -113,7 +114,10 @@ export async function analyzeCodeWithGemini(systemPrompt: string, userMessage: s
       })
     });
 
-    if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`HTTP error: ${response.status} - ${errorText}`);
+    }
     const data = await response.json();
     const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
