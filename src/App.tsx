@@ -78,17 +78,18 @@ const initialProgress: UserProgress = {
   lastActiveDate: null
 };
 
+const VALID_TABS = ['accueil', 'dashboard', 'profil', 'document', 'cours', 'lecon', 'certificats', 'badges', 'exercices', 'pratique', 'entrainement', 'projets', 'admin', 'classement'];
+
+// Navigation sync with URL hash
+const getValidTabFromHash = () => {
+  const hash = window.location.hash.replace('#', '');
+  return VALID_TABS.includes(hash) ? (hash as any) : 'accueil';
+};
+
 export default function App() {
   const { theme, setTheme } = useTheme();
 
-  // Navigation sync with URL hash
-  const getValidTabFromHash = () => {
-    const hash = window.location.hash.replace('#', '');
-    const validTabs = ['accueil', 'dashboard', 'profil', 'document', 'cours', 'certificats', 'badges', 'exercices', 'pratique', 'entrainement', 'projets', 'admin', 'classement'];
-    return validTabs.includes(hash) ? (hash as any) : 'accueil';
-  };
-
-  const [activeTab, setActiveTabState] = useState<'accueil' | 'dashboard' | 'profil' | 'document' | 'cours' | 'certificats' | 'badges' | 'exercices' | 'pratique' | 'entrainement' | 'projets' | 'admin' | 'classement'>(getValidTabFromHash());
+  const [activeTab, setActiveTabState] = useState<'accueil' | 'dashboard' | 'profil' | 'document' | 'cours' | 'lecon' | 'certificats' | 'badges' | 'exercices' | 'pratique' | 'entrainement' | 'projets' | 'admin' | 'classement'>(getValidTabFromHash());
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -552,9 +553,24 @@ export default function App() {
             progress={progress}
             onSelectDay={(dayId) => {
               setSelectedDayId(dayId);
-              setActiveTab('exercices' as any);
+              setActiveTab('lecon' as any);
             }}
             unlockedDays={unlockedDays}
+          />
+        )}
+
+        {activeTab === 'lecon' && (
+          <CourseView
+            dayId={selectedDayId}
+            progress={progress}
+            onToggleCompleteDay={handleToggleCompleteDay}
+            onSelectDay={(dayId) => {
+              setSelectedDayId(dayId);
+              setActiveTab('lecon' as any);
+            }}
+            onGoToExercises={() => setActiveTab('exercices' as any)}
+            unlockedDays={unlockedDays}
+            isAdminAuthenticated={isAdminAuthenticated}
           />
         )}
 

@@ -16,11 +16,12 @@ interface CourseViewProps {
   progress: UserProgress;
   onToggleCompleteDay: (dayId: number) => void;
   onSelectDay: (dayId: number) => void;
+  onGoToExercises: () => void;
   unlockedDays: number[];
   isAdminAuthenticated: boolean;
 }
 
-export default function CourseView({ dayId, progress, onToggleCompleteDay, onSelectDay, unlockedDays, isAdminAuthenticated }: CourseViewProps) {
+export default function CourseView({ dayId, progress, onToggleCompleteDay, onSelectDay, onGoToExercises, unlockedDays, isAdminAuthenticated }: CourseViewProps) {
   const currentDay = courseDays.find(d => d.id === dayId) || courseDays[0];
   const isCompleted = progress.completedDays.includes(currentDay.id);
   const isLocked = !unlockedDays.includes(currentDay.id);
@@ -175,19 +176,24 @@ export default function CourseView({ dayId, progress, onToggleCompleteDay, onSel
         </div>
       );
     },
-    h1: ({ children }: any) => <h1 className="font-display text-2xl font-black text-slate-900 dark:text-slate-100 mt-6 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">{children}</h1>,
-    h2: ({ children }: any) => <h2 className="font-display text-xl font-extrabold text-slate-900 dark:text-slate-100 mt-6 mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">{children}</h2>,
-    h3: ({ children }: any) => <h3 className="font-display text-base font-bold text-slate-850 dark:text-slate-200 mt-5 mb-2 flex items-center gap-1.5 text-indigo-950 dark:text-indigo-400">{children}</h3>,
-    h4: ({ children }: any) => <h4 className="font-display text-sm font-semibold text-slate-800 dark:text-slate-200 mt-4 mb-1.5">{children}</h4>,
-    p: ({ children }: any) => <p className="text-slate-650 dark:text-slate-300 leading-relaxed text-sm mb-4 font-sans">{children}</p>,
+    h1: ({ children }: any) => <h1 className="font-display text-3xl font-black text-slate-900 dark:text-white mt-8 mb-4 border-b border-slate-200 dark:border-slate-800 pb-3">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="font-display text-2xl font-extrabold text-slate-800 dark:text-slate-100 mt-8 mb-4">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="font-display text-lg font-bold text-indigo-700 dark:text-indigo-400 mt-6 mb-3">{children}</h3>,
+    h4: ({ children }: any) => <h4 className="font-display text-base font-semibold text-slate-700 dark:text-slate-300 mt-5 mb-2">{children}</h4>,
+    p: ({ children }: any) => <p className="text-slate-700 dark:text-slate-300 leading-loose text-base mb-5 font-sans">{children}</p>,
     strong: ({ children }: any) => <strong className="font-bold text-slate-900 dark:text-white">{children}</strong>,
     em: ({ children }: any) => <em className="italic text-slate-600 dark:text-slate-400">{children}</em>,
-    ul: ({ children }: any) => <ul className="list-disc pl-5 mb-4 space-y-1.5 dark:text-slate-300">{children}</ul>,
-    ol: ({ children }: any) => <ol className="list-decimal pl-5 mb-4 space-y-1.5 dark:text-slate-300">{children}</ol>,
-    li: ({ children }: any) => <li className="text-slate-650 dark:text-slate-300 text-sm leading-relaxed font-sans">{children}</li>,
+    ul: ({ children }: any) => <ul className="list-disc pl-6 mb-5 space-y-2 text-slate-700 dark:text-slate-300 text-base">{children}</ul>,
+    ol: ({ children }: any) => <ol className="list-decimal pl-6 mb-5 space-y-2 text-slate-700 dark:text-slate-300 text-base">{children}</ol>,
+    li: ({ children }: any) => <li className="leading-relaxed font-sans">{children}</li>,
     blockquote: ({ children }: any) => (
-      <blockquote className="border-l-4 border-indigo-200 dark:border-indigo-800 bg-indigo-50/20 dark:bg-indigo-900/10 pl-4 py-2.5 pr-2.5 my-4 rounded-r-xl italic text-indigo-950 dark:text-indigo-300 font-sans">
-        {children}
+      <blockquote className="relative border-l-4 border-indigo-400 dark:border-indigo-500 bg-indigo-50/50 dark:bg-indigo-500/10 p-5 my-6 rounded-r-2xl text-indigo-900 dark:text-indigo-200 font-sans shadow-sm">
+        <div className="absolute top-5 left-[-2.5rem] bg-white dark:bg-slate-900 rounded-full p-1 shadow-sm border border-slate-100 dark:border-slate-800">
+          <AlertTriangle className="h-4 w-4 text-indigo-500" />
+        </div>
+        <div className="text-base italic leading-relaxed">
+          {children}
+        </div>
       </blockquote>
     ),
     table: ({ children }: any) => (
@@ -223,52 +229,39 @@ export default function CourseView({ dayId, progress, onToggleCompleteDay, onSel
   const hasNext = currentDay.id < 28;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start"
-    >
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start relative">
       {/* Left Pane: Detailed Course Lesson (7 columns) */}
-      <div className="xl:col-span-7 space-y-6">
-        {/* Navigation & Phase Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div className="space-y-0.5">
-            <span className="text-xs uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500">
-              Phase {currentDay.phase}
-            </span>
-            <div className="flex items-center gap-2">
-              <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-100">
-                Jour {currentDay.id} : {currentDay.title}
-              </h1>
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="xl:col-span-7 space-y-8"
+      >
+        
+        {/* Beautiful Glassmorphism Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 h-40 w-40 rounded-full bg-indigo-500/20 blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-40 w-40 rounded-full bg-emerald-500/20 blur-3xl"></div>
+          
+          <div className="relative z-10 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white uppercase tracking-wider backdrop-blur-sm">
+                Phase {currentDay.phase}
+              </span>
               {isCompleted && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 shrink-0">
-                  <CheckCircle2 className="h-3 w-3" /> Lu
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-500/30 backdrop-blur-sm shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Complété
                 </span>
               )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              disabled={!hasPrev}
-              onClick={() => onSelectDay(currentDay.id - 1)}
-              className="p-2 border border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 rounded-xl disabled:opacity-30 disabled:pointer-events-none transition-colors"
-              title="Jour Précédent"
-            >
-              <ChevronLeft className="h-4.5 w-4.5 text-slate-600 dark:text-slate-400" />
-            </button>
-            <span className="text-xs font-mono px-2 font-semibold text-slate-500 dark:text-slate-400">
-              {currentDay.id} / 28
-            </span>
-            <button
-              disabled={!hasNext}
-              onClick={() => onSelectDay(currentDay.id + 1)}
-              className="p-2 border border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 rounded-xl disabled:opacity-30 disabled:pointer-events-none transition-colors"
-              title="Jour Suivant"
-            >
-              <ChevronRight className="h-4.5 w-4.5 text-slate-600 dark:text-slate-400" />
-            </button>
+            
+            <h1 className="font-display text-3xl sm:text-4xl font-black text-white leading-tight drop-shadow-sm">
+              <span className="text-indigo-300">Jour {currentDay.id} :</span> {currentDay.title}
+            </h1>
+            
+            <p className="text-slate-300 text-sm max-w-xl leading-relaxed">
+              {currentDay.description}
+            </p>
           </div>
         </div>
 
@@ -329,9 +322,17 @@ export default function CourseView({ dayId, progress, onToggleCompleteDay, onSel
               />
             </div>
             {!quizGatePassed && (
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-sans">
-                Complétez les 15 quiz du jour dans l&apos;onglet <strong className="text-slate-700 dark:text-slate-300">Exercices</strong> pour débloquer la validation.
-              </p>
+              <div className="flex flex-col gap-3 mt-2">
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-sans">
+                  Complétez les 15 quiz du jour dans l&apos;onglet <strong className="text-slate-700 dark:text-slate-300">Exercices</strong> pour débloquer la validation.
+                </p>
+                <button
+                  onClick={onGoToExercises}
+                  className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 font-semibold rounded-lg text-xs w-max hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors cursor-pointer"
+                >
+                  Aller aux exercices
+                </button>
+              </div>
             )}
           </div>
 
@@ -348,7 +349,7 @@ export default function CourseView({ dayId, progress, onToggleCompleteDay, onSel
                 className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer flex items-center gap-2 ${
                   isCompleted
                     ? 'bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-200/50 dark:hover:bg-emerald-900/50'
-                    : 'apple-btn-primary shadow-xs'
+                    : 'bg-gradient-to-r from-emerald-500 to-teal-400 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 border border-emerald-400/50'
                 }`}
               >
                 {isCompleted ? (
@@ -373,15 +374,55 @@ export default function CourseView({ dayId, progress, onToggleCompleteDay, onSel
             )}
           </div>
         </div>
-      </div>
+
+        {/* Previous / Next Chapter Navigation */}
+        <div className="pt-8 pb-12 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
+          {hasPrev ? (
+            <button
+              onClick={() => onSelectDay(currentDay.id - 1)}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-slate-700 dark:text-slate-300 transition-all cursor-pointer group"
+            >
+              <ChevronLeft className="h-5 w-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Précédent</span>
+                <span className="text-sm font-semibold group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Jour {currentDay.id - 1}</span>
+              </div>
+            </button>
+          ) : <div></div>}
+
+          {hasNext ? (
+            <button
+              onClick={() => onSelectDay(currentDay.id + 1)}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-slate-700 dark:text-slate-300 transition-all cursor-pointer group"
+            >
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Suivant</span>
+                <span className="text-sm font-semibold group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Jour {currentDay.id + 1}</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+            </button>
+          ) : <div></div>}
+        </div>
+      </motion.div>
 
       {/* Right Pane: Live Python Simulator Playground (5 columns) */}
-      <div className="xl:col-span-5 sticky top-6 space-y-6">
-        <div className="border border-slate-100 rounded-2xl bg-slate-900 shadow-lg overflow-hidden flex flex-col">
-          {/* Editor Header */}
-          <div className="bg-slate-950 px-4 py-3 flex items-center justify-between border-b border-slate-800">
+      <div className="xl:col-span-5 sticky top-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="space-y-6"
+        >
+          <div className="border border-slate-700 dark:border-slate-800 rounded-2xl bg-[#0f172a] shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
+          {/* Editor Header (Mac OS Style) */}
+          <div className="bg-[#1e293b] px-4 py-3 flex items-center justify-between border-b border-slate-800/80">
             <div className="flex items-center gap-2">
-              <Terminal className="h-4 w-4 text-emerald-500" />
+              <div className="flex items-center gap-1.5 mr-2">
+                <div className="w-3 h-3 rounded-full bg-rose-500/80"></div>
+                <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
+                <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+              </div>
+              <Terminal className="h-4 w-4 text-indigo-400" />
               <span className="text-xs font-mono font-bold text-slate-300 tracking-wide">
                 playground.py
               </span>
@@ -390,14 +431,14 @@ export default function CourseView({ dayId, progress, onToggleCompleteDay, onSel
             <div className="flex items-center gap-1.5">
               <button
                 onClick={handleCopyCode}
-                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors"
+                className="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors"
                 title="Copier le code"
               >
                 <Copy className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={handleResetCode}
-                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors"
+                className="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors"
                 title="Réinitialiser"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
@@ -440,31 +481,49 @@ export default function CourseView({ dayId, progress, onToggleCompleteDay, onSel
           </div>
 
           {/* Code run trigger bar */}
-          <div className="bg-slate-950 px-4 py-2.5 border-t border-slate-800 flex justify-between items-center">
-            <span className="text-[10px] text-slate-500 font-mono">
-              {copied ? 'Copie effectuée !' : 'Modifiable librement'}
-            </span>
+          <div className="p-4 bg-[#0f172a] border-t border-slate-800">
             <button
               onClick={handleRunCode}
-              disabled={isRunning}
-              className="px-3.5 py-1.5 apple-btn-primary !bg-emerald-500/80 font-semibold text-white rounded-lg text-xs flex items-center gap-1 disabled:opacity-50 transition-colors"
+              disabled={isRunning || isMobile}
+              className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg ${
+                isRunning || isMobile
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-indigo-500/25 border border-indigo-400/30 hover:scale-[1.02]'
+              }`}
             >
-              <Play className="h-3 w-3 fill-current" /> {isRunning ? 'Calcul...' : 'Lancer le code'}
+              {isRunning ? (
+                <>
+                  <span className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Exécution...
+                </>
+              ) : (
+                <>
+                  <Play className="h-5 w-5 fill-current" />
+                  Exécuter le code
+                </>
+              )}
             </button>
           </div>
 
-          {/* Output simulated Shell terminal */}
-          <div className="border-t border-slate-800 bg-black min-h-32 p-4 text-xs font-mono text-slate-300 flex flex-col justify-between">
-            <div className="space-y-1 overflow-auto max-h-44 custom-scrollbar whitespace-pre-wrap">
-              {output ? (
-                <span>{output}</span>
-              ) : (
-                <span className="text-slate-500 italic">
-                  Cliquez sur "Lancer le code" pour exécuter l'exemple de code officiel Python.
-                </span>
-              )}
+          {/* Editor Terminal Output */}
+          <div className="bg-[#0b1120] border-t border-slate-800/80 min-h-[160px] p-4 font-mono text-xs overflow-auto flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Sortie Terminal</span>
             </div>
-            <div className="mt-3 flex items-center text-[10px] text-slate-500 justify-between">
+            {output ? (
+              <pre className={`whitespace-pre-wrap leading-relaxed flex-1 font-semibold ${
+                output.includes('Erreur') ? 'text-rose-400' : 'text-emerald-400'
+              }`}>
+                {output}
+              </pre>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-slate-600 gap-2">
+                <Terminal className="h-6 w-6 opacity-50" />
+                <span className="opacity-50">Appuyez sur "Exécuter" pour voir le résultat</span>
+              </div>
+            )}
+            
+            <div className="mt-4 flex items-center text-[10px] text-slate-500 justify-between">
               <span>Python 3.11.2 (PyFlow Engine)</span>
               <div>
                 <span className="h-1.5 w-1.5 inline-block rounded-full bg-emerald-500 mr-1.5"></span>
@@ -482,8 +541,9 @@ export default function CourseView({ dayId, progress, onToggleCompleteDay, onSel
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
             Vous pouvez surcharger le code directement au sein de la fenêtre de saisie ! Changez les valeurs de variables arithmétiques, et observez de façon concrète la mise à jour des calculs.
           </p>
-        </div>
+          </div>
+        </motion.div>
       </div>
-    </motion.div>
+    </div>
   );
 }

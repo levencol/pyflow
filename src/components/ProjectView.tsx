@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, Clock, CheckCircle2, ChevronRight, HelpCircle, Eye, EyeOff, Terminal, Sparkles, BookOpen, Lock, ArrowLeft, Search, ChevronDown, Activity, Zap, Database, BarChart2 } from 'lucide-react';
+import { Trophy, Clock, CheckCircle2, ChevronRight, HelpCircle, Eye, EyeOff, Terminal, Sparkles, BookOpen, Lock, ArrowLeft, Search, ChevronDown, Activity, Zap, Database, BarChart2, Play, Code2, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Markdown from 'react-markdown';
 import { LearnProject, UserProgress } from '../types';
@@ -59,6 +59,13 @@ export default function ProjectView({ progress, activeProjectId, onSelectProject
 
   const handleQuitProject = () => {
     onSelectProject(null as unknown as string); // Need to allow null upstream or just cast, wait, onSelectProject takes string. I'll just change the upstream type if needed, but in App.tsx it's `useState<string | null>(null)` so it accepts null. Wait, the prop type is `(projectId: string) => void`. Let me change the prop type to `(projectId: string | null) => void`.
+  };
+
+  const handleSelectProject = (id: string) => {
+    onSelectProject(id);
+    setActiveStepIdx(0);
+    setShowSolution(false);
+    setShowHint({});
   };
 
   if (activeProjectId === null) {
@@ -245,267 +252,119 @@ export default function ProjectView({ progress, activeProjectId, onSelectProject
     );
   }
 
-  const handleSelectProject = (id: string) => {
-    onSelectProject(id);
-    setActiveStepIdx(0);
-    setShowSolution(false);
-    setShowHint({});
-  };
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="space-y-8"
+      className="flex flex-col h-[calc(100vh-6rem)] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xl bg-white dark:bg-slate-900"
     >
-      <button 
-        onClick={handleQuitProject}
-        className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
-      >
-        <ArrowLeft className="h-4 w-4" /> Retour au catalogue
-      </button>
-
-      {/* Portfolio Selector grid list */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {listProjects.map((proj, idx) => {
-          const isSelected = proj.id === currentProject.id;
-          const isCompleted = progress.completedProjects.includes(proj.id);
-          
-          let colorBorder = 'apple-glass dark:apple-glass-dark hover:shadow-md transition-shadow';
-          if (isSelected) {
-            colorBorder = 'apple-glass dark:apple-glass-dark ring-2 ring-indigo-500 dark:ring-indigo-400 shadow-md';
-          }
-
-          return (
-            <button
-              key={proj.id}
-              onClick={() => handleSelectProject(proj.id)}
-              className={`p-4 rounded-xl border transition-all text-left flex gap-3.5 items-start cursor-pointer group ${colorBorder}`}
-            >
-              <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center font-bold text-sm ${
-                isCompleted 
-                  ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-650 dark:text-emerald-400' 
-                  : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400'
-              }`}>
-                {isCompleted ? <CheckCircle2 className="h-5.5 w-5.5 text-emerald-500 dark:text-emerald-400" /> : <Trophy className="h-5 w-5" />}
-              </div>
-
-              <div className="space-y-1 truncate w-[85%]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    Étape {idx + 1} • {proj.level}
-                  </span>
-                  {isCompleted && <span className="text-[9px] font-semibold text-emerald-650 dark:text-emerald-400">Résolu</span>}
-                </div>
-                <h4 className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate">{proj.title}</h4>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate font-sans">{proj.technologies.slice(0, 3).join(', ')}</p>
-              </div>
-            </button>
-          );
-        })}
+      {/* Header */}
+      <div className="h-14 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 bg-white dark:bg-slate-900 shrink-0">
+        <button 
+          onClick={handleQuitProject}
+          className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4" /> {currentProject.title}
+        </button>
       </div>
 
-      {/* Main workspace layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-        {/* Left Side: Step Guide Accordion & Overview (7 cols) */}
-        <div className="xl:col-span-7 space-y-6">
-          <div className="apple-glass dark:apple-glass-dark rounded-2xl p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Projet Pratique {currentProject.level}</span>
-                <h1 className="font-display text-xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
-                  {currentProject.title}
-                </h1>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-100 dark:border-slate-700">
-                  <Clock className="h-3.5 w-3.5 text-slate-400" /> {currentProject.estimatedTime}
-                </span>
-                {hasCompleted && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-md border border-emerald-100 dark:border-emerald-800">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" /> Validé
-                  </span>
-                )}
-              </div>
+      {/* Main split view */}
+      <div className="flex-1 flex overflow-hidden">
+        
+        {/* Left Pane: Instructions */}
+        <div className="w-1/3 min-w-[300px] flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#f8fafc]">
+          <div className="bg-slate-100 dark:bg-slate-200 text-slate-800 font-bold text-sm px-4 py-3 shrink-0 border-b border-slate-200 dark:border-slate-300">
+            Instructions du projet
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-800 dark:text-slate-800 leading-relaxed font-sans space-y-6">
+            <div className="space-y-4">
+              <Markdown components={compactMarkdownComponents}>{currentProject.description}</Markdown>
             </div>
-
-            <p className="text-xs text-slate-650 dark:text-slate-300 leading-relaxed font-sans">
-              {currentProject.description}
-            </p>
-
-            {/* Tech chips */}
-            <div className="flex flex-wrap gap-1.5 pt-1.5 pb-2">
-              {currentProject.technologies.map((tech, i) => (
-                <span key={i} className="text-[10px] font-semibold font-mono px-2 py-0.5 rounded-md bg-indigo-50/50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-800/30">
-                  {tech}
-                </span>
+            
+            <div className="space-y-6 mt-6">
+              {currentProject.steps.map((step, idx) => (
+                <div key={step.id} className="space-y-2">
+                  <Markdown components={compactMarkdownComponents}>{step.instruction}</Markdown>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Stepped Milestones outline */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Jalons d’Étapes</h3>
-
-            <div className="space-y-3">
-              {currentProject.steps.map((step, idx) => {
-                const isOpen = idx === activeStepIdx;
-
-                return (
-                  <div 
-                    key={step.id} 
-                    className={`border rounded-xl transition-all overflow-hidden ${
-                      isOpen 
-                        ? 'border-indigo-100 dark:border-indigo-800 bg-linear-to-b from-white/90 dark:from-slate-900/90 to-slate-50/20 dark:to-slate-800/20 shadow-3xs' 
-                        : 'border-slate-100 dark:border-slate-800 hover:border-slate-205 dark:hover:border-slate-700 bg-white/70 dark:bg-slate-900/60'
-                    }`}
-                  >
-                    {/* Header trigger */}
-                    <button
-                      onClick={() => setActiveStepIdx(idx)}
-                      className="w-full text-left p-4 flex items-center justify-between cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`h-6 w-6 rounded-md flex items-center justify-center text-xs font-bold font-mono ${
-                          isOpen
-                            ? 'apple-btn-primary shadow-3xs'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                        }`}>
-                          {step.id}
-                        </span>
-                        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-xs font-sans sm:text-sm">
-                          {step.title}
-                        </h4>
-                      </div>
-                      <ChevronRight className={`h-4.5 w-4.5 text-slate-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
-                    </button>
-
-                    {/* Step details inside accordion */}
-                    {isOpen && (
-                      <div className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-800/30 space-y-4 animate-fade-in">
-                        <div className="text-xs text-slate-650 dark:text-slate-300 leading-relaxed font-sans">
-                          <Markdown components={compactMarkdownComponents}>{step.instruction}</Markdown>
-                        </div>
-
-                        {/* Hint box */}
-                        <div className="space-y-1.5">
-                          <button
-                            onClick={() => toggleHint(step.id)}
-                            className="text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold flex items-center gap-1 cursor-pointer select-none"
-                          >
-                            <HelpCircle className="h-3.5 w-3.5" /> {showHint[step.id] ? "Masquer l'indice" : "Besoin d'un indice ?"}
-                          </button>
-                          
-                          {showHint[step.id] && (
-                            <div className="p-3 bg-indigo-50/40 dark:bg-indigo-900/20 border border-indigo-100/50 dark:border-indigo-800/50 rounded-lg text-xs text-indigo-950 dark:text-indigo-300 leading-relaxed font-sans">
-                              <Markdown components={compactMarkdownComponents}>{step.hint}</Markdown>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Starting template if present */}
-                        {step.initialCode && (
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-0.5">Squelette de code initial (template) :</span>
-                            <div className="rounded-xl bg-slate-950 border border-slate-800/80 overflow-hidden font-mono text-[11px] text-slate-305 p-3.5 max-h-48 overflow-auto">
-                              <pre className="whitespace-pre-wrap"><code><PythonHighlighter code={step.initialCode} /></code></pre>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+          {/* Bottom Accordion "Soumissions et aide" */}
+          <div className="border-t border-slate-200 dark:border-slate-300 shrink-0 bg-white">
+            <button className="w-full flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-200 hover:bg-slate-200 dark:hover:bg-slate-300 transition-colors text-slate-800 font-bold text-sm cursor-pointer">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="h-4 w-4" /> Soumissions et aide
+              </div>
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            <div className="p-4 space-y-4">
+              <div className="flex items-center gap-6 border-b border-slate-200 pb-0">
+                <button className="text-[11px] font-bold text-slate-900 border-b-2 border-slate-900 pb-2 uppercase cursor-pointer">
+                  Soumissions
+                </button>
+                <button className="text-[11px] font-bold text-slate-400 hover:text-slate-600 pb-2 uppercase cursor-pointer">
+                  Guides
+                </button>
+              </div>
+              
+              <div className="flex items-start gap-4 border border-slate-100 rounded-lg p-4 bg-white shadow-sm">
+                <div className="p-2 border border-slate-200 rounded shrink-0 text-slate-700">
+                  <Code2 className="h-5 w-5" />
+                </div>
+                <div className="text-[11px] text-slate-600 space-y-3 leading-relaxed">
+                  <p>Cliquez sur "Soumettre le projet" pour obtenir un retour sur votre solution.</p>
+                  <p>Pour expérimenter, utilisez "Exécuter tout" ou "Exécuter la cellule" dans l'éditeur pour voir le résultat de votre code avant de soumettre.</p>
+                </div>
+              </div>
             </div>
-          </div>
-
-          {/* Validation section in bottom */}
-          <div className="apple-glass dark:apple-glass-dark rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <h4 className="font-bold text-slate-800 dark:text-slate-200 text-xs">Avez-vous réussi le projet ?</h4>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500">Une fois assemblé, enregistrez-le pour l’ajouter à votre score d’expert.</p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onCompleteProject(currentProject.id)}
-              className={`px-4.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                hasCompleted
-                  ? 'bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-400'
-                  : 'apple-btn-primary shadow-3xs'
-              }`}
-            >
-              {hasCompleted ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 dark:text-emerald-400" /> Projet Validé (Annuler)
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-3.5 w-3.5 animate-pulse" /> Déclarer Résolu &amp; Valider
-                </>
-              )}
-            </motion.button>
           </div>
         </div>
 
-        {/* Right Side: Reference Solution Pane (5 cols) */}
-        <div className="xl:col-span-5 sticky top-6 space-y-6">
-          <div className="border border-slate-150 dark:border-slate-800 rounded-2xl bg-slate-950 shadow-md overflow-hidden">
-            <div className="bg-slate-900/80 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Terminal className="h-4 w-4 text-emerald-500" />
-                <span className="text-xs font-mono font-bold text-slate-350">solution_référence.py</span>
-              </div>
-
-              <button
-                onClick={() => setShowSolution(!showSolution)}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-[10px] rounded-lg text-slate-300 font-semibold transition-colors flex items-center gap-1"
-              >
-                {showSolution ? (
-                  <>
-                    <EyeOff className="h-3 w-3" /> Cacher la solution
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-3 w-3" /> Révéler la solution
-                  </>
-                )}
-              </button>
+        {/* Right Pane: IDE */}
+        <div className="flex-1 flex flex-col bg-[#1e293b]">
+          {/* Top IDE bar */}
+          <div className="h-10 border-b border-slate-700/50 flex items-center justify-between px-4 text-xs font-medium text-slate-400 shrink-0 bg-[#0f172a]">
+            <div className="flex items-center gap-4">
+               <button className="text-slate-300 hover:text-white cursor-pointer transition-colors">File</button>
             </div>
-
-            {/* Solution Display or Hidden Overlay */}
-            <div className="relative min-h-80 bg-black/90 p-5 font-mono text-[11px] leading-relaxed text-slate-300 overflow-auto">
-              {showSolution ? (
-                <pre className="whitespace-pre overflow-auto max-h-120 custom-scrollbar"><code><PythonHighlighter code={currentProject.solutionCode} /></code></pre>
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-linear-to-b from-slate-950/80 to-slate-950 space-y-4">
-                  <div className="h-10 w-10 bg-slate-900 rounded-full flex items-center justify-center text-slate-400">
-                    🔒
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-slate-205 text-sm">Solution Professionnelle Verrouillée</h5>
-                    <p className="text-[10px] text-slate-400 max-w-xs leading-relaxed mt-1 font-sans">
-                      Nous vous encourageons fortement à écrire le projet vous-même en combinant les jalons avant de consulter le fichier d’implémentation.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowSolution(true)}
-                    className="px-4 py-2 apple-btn-primary font-bold text-xs rounded-lg transition-colors cursor-pointer font-sans"
-                  >
-                    Révéler la solution quand même
-                  </button>
-                </div>
-              )}
+            <button className="text-slate-400 hover:text-white cursor-pointer">
+              <ArrowLeft className="h-4 w-4 rotate-180" />
+            </button>
+          </div>
+          
+          {/* Editor Area */}
+          <div className="flex-1 overflow-y-auto p-4 bg-[#0f172a]/50">
+            <div className="mb-4 text-[11px] text-slate-400">
+              Complétez le code suivant afin que votre solution respecte les instructions.
             </div>
-
-            {/* Shell footer */}
-            <div className="bg-slate-950 border-t border-slate-850 p-3 flex justify-between items-center text-[10px] text-slate-500 font-mono">
-              <span className="flex items-center gap-1"><BookOpen className="h-3 w-3 text-slate-400" /> Structure Clean-Code PEP8</span>
-              <span>100% Fonctionnel</span>
+            <div className="font-mono text-[13px] leading-relaxed">
+               <pre className="whitespace-pre-wrap"><code className="language-python">
+                 <PythonHighlighter code={currentProject.steps[0]?.initialCode || '# Écrivez votre code ici'} isDark={true} />
+               </code></pre>
             </div>
+          </div>
+          
+          {/* Footer IDE Action Bar */}
+          <div className="h-14 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0">
+             <div className="flex items-center gap-3">
+               <button className="p-2 border border-slate-300 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm">
+                  <RotateCcw className="h-4 w-4" />
+               </button>
+               <button className="flex items-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-md font-bold text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shadow-sm">
+                  <Play className="h-4 w-4" /> Exécuter Tout
+               </button>
+               <button 
+                 onClick={() => onCompleteProject(currentProject.id)}
+                 className={`flex items-center gap-2 px-6 py-2 transition-colors rounded-md font-bold text-sm text-white cursor-pointer shadow-sm ${
+                   hasCompleted ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-[#00e676] hover:bg-[#00c853]'
+                 }`}
+               >
+                 {hasCompleted ? 'Projet Soumis (Annuler)' : 'Soumettre Le Projet'}
+               </button>
+             </div>
           </div>
         </div>
       </div>

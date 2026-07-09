@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Search, ChevronDown, SlidersHorizontal, CheckCircle2, Sparkles, Code2, Database, Terminal, FileCode2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { UserProgress } from '../types';
+import CertificateView from './CertificateView';
+import CourseDetailView from './CourseDetailView';
 
 interface CoursViewProps {
   progress: UserProgress;
@@ -9,74 +11,44 @@ interface CoursViewProps {
   unlockedDays: number[];
 }
 
-const MOCK_COURSES = [
+export const MOCK_COURSES = [
   { 
     id: 'c1', 
-    title: 'Introduction aux statistiques en Python', 
-    level: 'Intermédiaire', 
-    desc: 'Renforcez vos compétences statistiques en collectant, analysant et interprétant les données avec précision grâce à Python.', 
-    author: { name: 'Maggie Matsui', role: 'Curriculum Manager at DataCamp', img: 'https://i.pravatar.cc/150?u=maggie' }, 
+    title: 'Introduction à Python', 
+    level: 'Débutant', 
+    desc: "Découvrez les bases fondamentales de Python, de l'installation aux premières structures de contrôle.",  
+    author: { name: 'PyFlow', role: 'Équipe Pédagogique', img: 'https://ui-avatars.com/api/?name=PyFlow&background=0f172a&color=fff&bold=true' }, 
     time: '4 h', 
-    isCompleted: false, 
+    isCompleted: true, 
     tech: 'Python' 
   },
   { 
     id: 'c2', 
-    title: 'Introduction au shell', 
-    level: 'Débutant', 
-    desc: 'Découvrez les bases de la ligne de commande Unix pour naviguer dans vos fichiers et exécuter des programmes de manière efficace.', 
-    author: { name: 'Filip Schouwenaars', role: 'Machine Learning Researcher', img: 'https://i.pravatar.cc/150?u=filip' }, 
-    time: '4 h', 
+    title: 'Python intermédiaire', 
+    level: 'Intermédiaire', 
+    desc: "Approfondissez vos connaissances avec les structures de données complexes, la gestion d'erreurs et les fichiers.",  
+    author: { name: 'PyFlow', role: 'Équipe Pédagogique', img: 'https://ui-avatars.com/api/?name=PyFlow&background=0f172a&color=fff&bold=true' }, 
+    time: '5 h', 
     isCompleted: true, 
-    tech: 'Shell' 
+    tech: 'Python' 
   },
   { 
     id: 'c3', 
-    title: 'Structures de données et algorithmes en Python', 
+    title: 'Python Avancé', 
     level: 'Avancé', 
-    desc: 'Explorez les structures de données (listes chaînées, piles, files, tables de hachage, graphes) et maîtrisez les algorithmes de recherche et tri.', 
-    author: { name: 'Miriam Antona', role: 'Software Engineer', img: 'https://i.pravatar.cc/150?u=miriam' }, 
-    time: '4 h', 
-    isCompleted: true, 
-    tech: 'Python' 
-  },
-  { 
-    id: 'c4', 
-    title: 'Introduction aux tests en Python', 
-    level: 'Débutant', 
-    desc: 'Apprenez à écrire des tests unitaires robustes avec pytest pour assurer la qualité et la fiabilité de votre code Python.', 
-    author: { name: 'Alex Watson', role: 'QA Engineer', img: 'https://i.pravatar.cc/150?u=alex' }, 
-    time: '3 h', 
+    desc: 'Maîtrisez la programmation orientée objet, les décorateurs, les générateurs et le typage statique.', 
+    author: { name: 'PyFlow', role: 'Équipe Pédagogique', img: 'https://ui-avatars.com/api/?name=PyFlow&background=0f172a&color=fff&bold=true' }, 
+    time: '6 h', 
     isCompleted: false, 
     tech: 'Python' 
-  },
-  { 
-    id: 'c5', 
-    title: "Principes d'ingénierie logicielle en Python", 
-    level: 'Intermédiaire', 
-    desc: 'Écrivez du code propre, maintenable et modulaire en appliquant les principes SOLID et le design pattern MVC.', 
-    author: { name: 'Sarah Lee', role: 'Senior Developer', img: 'https://i.pravatar.cc/150?u=sarah' }, 
-    time: '5 h', 
-    isCompleted: false, 
-    tech: 'Python' 
-  },
-  { 
-    id: 'c6', 
-    title: 'Écrire du code Python efficace', 
-    level: 'Intermédiaire', 
-    desc: 'Optimisez les performances de vos scripts Python en utilisant les générateurs, les compréhensions et les modules intégrés avancés.', 
-    author: { name: 'John Doe', role: 'Data Scientist', img: 'https://i.pravatar.cc/150?u=john' }, 
-    time: '4 h', 
-    isCompleted: false, 
-    tech: 'Python' 
-  },
+  }
 ];
 
 const TAGS = [
   "Tout", "Python", "SQL", "R", "Power BI", "Tableau", "Excel", 
   "Google Sheets", "AWS", "Azure", "Snowflake", "Java", "Alteryx", 
   "KNIME", "Claude", "Microsoft Copilot", "ChatGPT", "Gemini", 
-  "OpenAI", "PyTorch", "Google Cloud", "+24"
+  "OpenAI", "PyTorch", "Google Cloud"
 ];
 
 const getLevelBars = (level: string) => {
@@ -118,12 +90,30 @@ export default function CoursView({ progress, onSelectDay, unlockedDays = [] }: 
   const [activeTag, setActiveTag] = useState("Tout");
   const [searchQuery, setSearchQuery] = useState("");
   const [aiTutorEnabled, setAiTutorEnabled] = useState(false);
+  const [selectedCertificateCourse, setSelectedCertificateCourse] = useState<typeof MOCK_COURSES[0] | null>(null);
+  const [selectedCourseDetail, setSelectedCourseDetail] = useState<typeof MOCK_COURSES[0] | null>(null);
 
   const filteredCourses = MOCK_COURSES.filter(c => {
     const matchesTag = activeTag === 'Tout' || c.tech === activeTag || c.title.includes(activeTag);
     const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.desc.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTag && matchesSearch;
   });
+
+  if (selectedCertificateCourse) {
+    return <CertificateView course={selectedCertificateCourse} onClose={() => setSelectedCertificateCourse(null)} />;
+  }
+
+  if (selectedCourseDetail) {
+    return (
+      <CourseDetailView
+        course={selectedCourseDetail}
+        progress={progress}
+        onBack={() => setSelectedCourseDetail(null)}
+        onSelectDay={onSelectDay}
+        unlockedDays={unlockedDays}
+      />
+    );
+  }
 
   return (
     <motion.div 
@@ -156,18 +146,6 @@ export default function CoursView({ progress, onSelectDay, unlockedDays = [] }: 
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* AI Tutor Toggle */}
-          <button 
-            onClick={() => setAiTutorEnabled(!aiTutorEnabled)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${aiTutorEnabled ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
-              <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${aiTutorEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
-            </div>
-            <span className={`text-sm font-bold flex items-center gap-1 ${aiTutorEnabled ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
-              <Sparkles className="h-3.5 w-3.5" /> AI Tutor
-            </span>
-          </button>
 
           {/* Search */}
           <div className="relative">
@@ -190,12 +168,6 @@ export default function CoursView({ progress, onSelectDay, unlockedDays = [] }: 
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           </div>
-
-          {/* Filters Button */}
-          <button className="flex items-center gap-2 px-4 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">
-            <SlidersHorizontal className="h-4 w-4" />
-            Autres filtres
-          </button>
         </div>
       </div>
 
@@ -207,7 +179,8 @@ export default function CoursView({ progress, onSelectDay, unlockedDays = [] }: 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05, duration: 0.3 }}
-            className="flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full"
+            onClick={() => setSelectedCourseDetail(course)}
+            className="flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full cursor-pointer"
           >
             <div className="p-6 flex-1 flex flex-col">
               <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2">
@@ -250,16 +223,22 @@ export default function CoursView({ progress, onSelectDay, unlockedDays = [] }: 
               
               {course.isCompleted ? (
                 <button 
-                  onClick={() => onSelectDay(1)}
-                  className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCertificateCourse(course);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer z-10"
                 >
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                   Afficher la réussite
                 </button>
               ) : (
                 <button 
-                  onClick={() => onSelectDay(1)}
-                  className="px-6 py-2 border border-indigo-600 dark:border-indigo-500 rounded-lg text-sm font-bold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCourseDetail(course);
+                  }}
+                  className="px-6 py-2 border border-indigo-600 dark:border-indigo-500 rounded-lg text-sm font-bold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors cursor-pointer z-10"
                 >
                   Commencer
                 </button>
