@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchStudentAccess, getStoredStudentCode, setStoredStudentCode, fetchStudentProgress, saveStudentProgress, StudentProgress } from './services/api';
-import StudentLogin from './components/StudentLogin';
+import AuthRouter from './components/AuthRouter';
+import { usePointsToast } from './components/PointsToast';
 
 function dbToLocalProgress(db: StudentProgress): UserProgress {
   return {
@@ -40,9 +41,12 @@ import {
   Code,
   Shield,
   LogOut,
-  User
+  User,
+  Moon,
+  Sun
 } from 'lucide-react';
 
+import { useTheme } from './components/ThemeProvider';
 import { UserProgress } from './types';
 import { courseDays } from './data/curriculum';
 import Dashboard from './components/Dashboard';
@@ -50,7 +54,17 @@ import CourseView from './components/CourseView';
 import ExerciseView from './components/ExerciseView';
 import ProjectView from './components/ProjectView';
 import TerminalView from './components/TerminalView';
+import CoursView from './components/CoursView';
 import AdminView from './components/AdminView';
+import ChatWidget from './components/ChatWidget';
+import PlaceholderView from './components/PlaceholderView';
+import AccueilView from './components/AccueilView';
+import ProfilView from './components/ProfilView';
+import DocumentView from './components/DocumentView';
+import CertificatsView from './components/CertificatsView';
+import BadgesView from './components/BadgesView';
+import PratiqueView from './components/PratiqueView';
+import EntrainementView from './components/EntrainementView';
 
 const STORAGE_KEY = 'pyflow_progress';
 
@@ -64,8 +78,28 @@ const initialProgress: UserProgress = {
 };
 
 export default function App() {
-  // Navigation: 'dashboard' | 'cours' | 'exercices' | 'projets' | 'outils' | 'terminal' | 'admin'
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'cours' | 'exercices' | 'projets' | 'outils' | 'terminal' | 'admin'>('dashboard');
+  const { theme, setTheme } = useTheme();
+
+  // Navigation sync with URL hash
+  const getValidTabFromHash = () => {
+    const hash = window.location.hash.replace('#', '');
+    const validTabs = ['accueil', 'dashboard', 'profil', 'document', 'cours', 'certificats', 'badges', 'exercices', 'pratique', 'entrainement', 'projets', 'admin'];
+    return validTabs.includes(hash) ? (hash as any) : 'accueil';
+  };
+
+  const [activeTab, setActiveTabState] = useState<'accueil' | 'dashboard' | 'profil' | 'document' | 'cours' | 'certificats' | 'badges' | 'exercices' | 'pratique' | 'entrainement' | 'projets' | 'admin'>(getValidTabFromHash());
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveTabState(getValidTabFromHash());
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const setActiveTab = (tab: typeof activeTab) => {
+    window.location.hash = tab;
+  };
   const [selectedDayId, setSelectedDayId] = useState<number>(1);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
@@ -80,10 +114,8 @@ export default function App() {
   const [studentName, setStudentName] = useState<string | null>(null);
   const [isAccessReady, setIsAccessReady] = useState<boolean>(false);
 
-  // Responsive mobile sidebar
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  // Collapsible desktop sidebar
-  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  // Responsive menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Progressive training profile loaded from local persistence
   const [progress, setProgress] = useState<UserProgress>(initialProgress);
@@ -190,17 +222,18 @@ export default function App() {
       try {
         const parsed: UserProgress = JSON.parse(raw);
         
-        // Dynamic streak verification on load
-        const todayStr = new Date().toISOString().split('T')[0];
+        // Dynamic streak verification on load — only keep streak if last active was yesterday or today
         if (parsed.lastActiveDate) {
           const lastActive = new Date(parsed.lastActiveDate);
           const today = new Date();
-          const diffTime = Math.abs(today.getTime() - lastActive.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          // Normalize to midnight UTC for clean day comparison
+          lastActive.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          const diffDays = Math.round((today.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
           
           if (diffDays > 1) {
-            // Reset streak if inactive more than 1 day
-            parsed.streak = Math.max(1, parsed.streak);
+            // More than 1 day gap — reset streak to 0 (will be 1 on next completion)
+            parsed.streak = 0;
           }
         }
         
@@ -222,6 +255,8 @@ export default function App() {
     }
   };
 
+  const { showPoints, ToastContainer } = usePointsToast();
+
   // Toggle completion flag on course day reading
   const handleToggleCompleteDay = (dayId: number) => {
     const isCompleted = progress.completedDays.includes(dayId);
@@ -231,25 +266,46 @@ export default function App() {
       updatedCompletedDays = updatedCompletedDays.filter(id => id !== dayId);
     } else {
       updatedCompletedDays.push(dayId);
+      showPoints(100, `Cours du Jour ${dayId} validé !`);
     }
 
-    // Bump streak on new completions
+    // Streak logic: increment only if last active day was yesterday
     const todayStr = new Date().toISOString().split('T')[0];
     let newStreak = progress.streak;
-    if (!isCompleted && progress.lastActiveDate !== todayStr) {
-      newStreak = progress.streak + 1;
+    if (!isCompleted) {
+      if (progress.lastActiveDate === null) {
+        // First ever completion
+        newStreak = 1;
+      } else if (progress.lastActiveDate === todayStr) {
+        // Already active today — keep streak unchanged
+        newStreak = progress.streak;
+      } else {
+        const lastActive = new Date(progress.lastActiveDate);
+        const today = new Date();
+        lastActive.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((today.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          // Was active yesterday → increment streak
+          newStreak = progress.streak + 1;
+        } else {
+          // Gap > 1 day → reset streak to 1
+          newStreak = 1;
+        }
+      }
     }
 
     saveProgress({
       ...progress,
       completedDays: updatedCompletedDays,
-      lastActiveDate: todayStr,
+      lastActiveDate: isCompleted ? progress.lastActiveDate : todayStr,
       streak: newStreak
     });
   };
 
   // Pass quiz item
-  const handlePassQuiz = (quizId: string) => {
+  const handlePassQuiz = useCallback((quizId: string) => {
+    showPoints(10, 'Quiz réussi !');
     saveProgress({
       ...progress,
       completedQuizzes: {
@@ -257,10 +313,12 @@ export default function App() {
         [quizId]: true
       }
     });
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress]);
 
   // Pass coding challenge item
-  const handlePassChallenge = (challengeId: string, submittedCode: string) => {
+  const handlePassChallenge = useCallback((challengeId: string, submittedCode: string) => {
+    showPoints(50, 'Défi de code validé !');
     saveProgress({
       ...progress,
       completedChallenges: {
@@ -268,7 +326,8 @@ export default function App() {
         [challengeId]: submittedCode
       }
     });
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress]);
 
   // Complete project milestone
   const handleCompleteProject = (projectId: string) => {
@@ -289,15 +348,14 @@ export default function App() {
 
   const handleSelectDay = (dayId: number) => {
     setSelectedDayId(dayId);
-    setActiveTab('cours');
-    // auto collapse on mobile selection
-    setMobileSidebarOpen(false);
+    setActiveTab('cours' as any); // Kept the variable in other components for now, but UI tab is handled
+    setIsMenuOpen(false);
   };
 
   const handleSelectProject = (projectId: string) => {
     setActiveProjectId(projectId);
     setActiveTab('projets');
-    setMobileSidebarOpen(false);
+    setIsMenuOpen(false);
   };
 
   const totalSteps = 28;
@@ -307,7 +365,7 @@ export default function App() {
   // Show login screen if not authenticated yet
   if (!isAccessReady) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-slate-400 text-sm flex items-center gap-2">
           <span className="h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin inline-block" />
           Chargement de votre espace…
@@ -316,302 +374,216 @@ export default function App() {
     );
   }
 
-  if (!studentName && !getStoredStudentCode()) {
-    return <StudentLogin onSuccess={handleStudentLogin} />;
+  if (!studentName) {
+    return <AuthRouter onLoginSuccess={handleStudentLogin} />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* SIDEBAR NAVIGATION - COLLAPSIBLE FOR BOTH DESKTOP & MOBILE */}
-      <aside 
-        className={`fixed inset-y-0 left-0 bg-slate-900 text-slate-300 border-r border-slate-850 z-40 flex flex-col justify-between shrink-0 lg:static transition-all duration-300 overflow-hidden ${
-          mobileSidebarOpen 
-            ? 'translate-x-0 w-64 flex' 
-            : '-translate-x-full lg:translate-x-0'
-        } ${
-          desktopSidebarOpen 
-            ? 'lg:flex lg:w-64' 
-            : 'lg:flex lg:w-0 lg:border-r-0'
-        }`}
-      >
-        <div className="flex flex-col flex-1 w-64">
-          {/* Brand header */}
-          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-850 bg-slate-950 w-64">
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-linear-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center font-bold tracking-tight shadow-md select-none font-display">
-                Py
-              </div>
-              <div className="flex flex-col">
-                <span className="font-display font-black text-white text-base tracking-tight">PyFlow</span>
-                <span className="text-[10px] text-slate-500 font-mono tracking-wider uppercase font-bold">Python Express</span>
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => {
-                setMobileSidebarOpen(false);
-                setDesktopSidebarOpen(false);
-              }}
-              className="p-1.5 text-slate-450 hover:text-white hover:bg-slate-850 rounded-lg transition-colors cursor-pointer"
-              title="Masquer la barre"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-300">
+      <ToastContainer />
 
-          {/* User Progress overview stats in sidebar */}
-          <div className="p-5 border-b border-slate-850 bg-slate-900/40 w-64">
-            <div className="flex items-center justify-between text-xs text-slate-450 font-bold mb-2">
-              <span>PROGRESSION GLOBALE</span>
-              <span className="font-mono text-white">{globalPercent}%</span>
+      {/* Top Header with Hamburger Menu */}
+      <header className="h-16 apple-glass dark:apple-glass-dark px-6 flex items-center justify-between sticky top-0 z-40 shadow-2xs transition-colors">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+            title="Ouvrir le menu"
+          >
+            <Menu className="h-5.5 w-5.5 text-slate-700 dark:text-slate-300" />
+          </button>
+          
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-linear-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center font-bold tracking-tight shadow-md select-none font-display text-sm">
+              Py
             </div>
-            <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div 
-                className="bg-indigo-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${globalPercent}%` }}
-              ></div>
+            <div className="hidden sm:flex flex-col">
+              <span className="font-display font-black text-slate-900 dark:text-white text-sm tracking-tight leading-tight">PyFlow</span>
             </div>
           </div>
+        </div>
 
-          {/* Navigation Links */}
-          <nav className="p-4 space-y-1.5 flex-1 select-none w-64">
-            <button
-              onClick={() => { setActiveTab('dashboard'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'dashboard'
-                  ? 'bg-indigo-600 text-white shadow-s'
-                  : 'hover:bg-slate-850 hover:text-white'
-              }`}
-            >
-              <LayoutDashboard className="h-4.5 w-4.5" />
-              <span>Tableau de Bord</span>
-            </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer"
+            title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+          >
+            {theme === 'dark' ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
+          </button>
 
-            <button
-              onClick={() => { setActiveTab('cours'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'cours'
-                  ? 'bg-indigo-600 text-white shadow-s'
-                  : 'hover:bg-slate-850 hover:text-white'
-              }`}
-            >
-              <BookMarked className="h-4.5 w-4.5" />
-              <span>Cours par Jour</span>
-            </button>
+          {/* Direct streak flame tracker badge */}
+          <div className="hidden sm:flex items-center gap-1 rounded-full bg-orange-50/50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 px-3.5 py-1.5 shadow-2xs">
+            <Flame className="h-4.5 w-4.5 text-orange-500 fill-current animate-bounce" />
+            <span className="text-xs font-mono font-bold text-orange-950 dark:text-orange-300">
+              {progress.streak} Jour{progress.streak > 1 ? 's' : ''}
+            </span>
+          </div>
 
-            <button
-              onClick={() => { setActiveTab('exercices'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'exercices'
-                  ? 'bg-indigo-600 text-white shadow-s'
-                  : 'hover:bg-slate-850 hover:text-white'
-              }`}
-            >
-              <CheckSquare className="h-4.5 w-4.5" />
-              <span>Exercices Pratiques</span>
-            </button>
-
-            <button
-              onClick={() => { setActiveTab('projets'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'projets'
-                  ? 'bg-indigo-600 text-white shadow-s'
-                  : 'hover:bg-slate-850 hover:text-white'
-              }`}
-            >
-              <Trophy className="h-4.5 w-4.5" />
-              <span>Projets Guidés</span>
-            </button>
-
-            <button
-              onClick={() => { setActiveTab('terminal'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'terminal'
-                  ? 'bg-indigo-600 text-white shadow-s'
-                  : 'hover:bg-slate-850 hover:text-white'
-              }`}
-            >
-              <Terminal className="h-4.5 w-4.5" />
-              <span>Terminal Linux</span>
-            </button>
-
-            <button
-              onClick={() => { setActiveTab('outils'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'outils'
-                  ? 'bg-indigo-600 text-white shadow-s'
-                  : 'hover:bg-slate-850 hover:text-white'
-              }`}
-            >
-              <GraduationCap className="h-4.5 w-4.5" />
-              <span>Conseils &amp; Outils</span>
-            </button>
-
-            {getStoredStudentCode() === 'PYFLOW-ADMIN-PY' && (
+          {studentName && (
+            <div className="flex items-center gap-2 border-l border-slate-200 dark:border-slate-700 pl-3">
+              <div className="hidden sm:flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 px-3 py-1.5 rounded-full">
+                <User className="h-3.5 w-3.5 text-indigo-500" />
+                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 max-w-28 truncate">{studentName}</span>
+              </div>
               <button
-                onClick={() => { setActiveTab('admin'); setMobileSidebarOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer border-t border-slate-800/60 pt-3 mt-2 ${
-                  activeTab === 'admin'
-                    ? 'bg-indigo-650 text-white shadow-s'
-                    : 'hover:bg-slate-850 hover:text-white'
-                }`}
+                onClick={handleStudentLogout}
+                title="Se déconnecter"
+                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors cursor-pointer"
               >
-                <Shield className="h-4.5 w-4.5 text-indigo-400" />
-                <span>Administration</span>
+                <LogOut className="h-4 w-4" />
               </button>
-            )}
-          </nav>
+            </div>
+          )}
         </div>
+      </header>
 
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-slate-850 bg-slate-950 flex items-center justify-between text-[11px] text-slate-500 w-64">
-          <span className="font-mono">v1.1 (Stable)</span>
-          <div className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-            <span>App Prête</span>
+      {/* DROPDOWN MENU / OVERLAY */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-30 flex">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
+          <div className="relative bg-white dark:bg-slate-900 w-64 h-full shadow-2xl flex flex-col border-r border-slate-200 dark:border-slate-800 animate-slide-in-left">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="font-bold font-display text-slate-800 dark:text-slate-200">Menu de Formation</span>
+              <button onClick={() => setIsMenuOpen(false)} className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded cursor-pointer">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+              {[
+                { id: 'accueil', label: 'Accueil', icon: Sparkles },
+                { id: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
+                { id: 'profil', label: 'Profil', icon: User },
+                { id: 'document', label: 'Document', icon: BookOpen },
+                { id: 'cours', label: 'Cours', icon: BookOpen },
+                { id: 'certificats', label: 'Certificats', icon: Award },
+                { id: 'badges', label: 'Badges', icon: Shield },
+                { id: 'exercices', label: 'Leçon & Exercices', icon: Code },
+                { id: 'pratique', label: 'Pratique', icon: CheckSquare },
+                { id: 'entrainement', label: 'Entrainement', icon: Flame },
+                { id: 'projets', label: 'Projets', icon: Trophy }
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => { setActiveTab(item.id as any); setIsMenuOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                    activeTab === item.id
+                      ? 'apple-btn-primary shadow-xs'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <item.icon className="h-4.5 w-4.5" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+              
+              {isAdminAuthenticated && (
+                <>
+                  <div className="my-2 border-t border-slate-200 dark:border-slate-800"></div>
+                  <button
+                    onClick={() => { setActiveTab('admin'); setIsMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                      activeTab === 'admin'
+                        ? 'apple-btn-primary shadow-xs'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    <Shield className="h-4.5 w-4.5 text-indigo-400" />
+                    <span>Administration</span>
+                  </button>
+                </>
+              )}
+            </nav>
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 font-mono text-center">
+              PyFlow v1.2 (Liquid Glass)
+            </div>
           </div>
         </div>
-      </aside>
-
-      {/* MOBILE OVERLAY BACKGROUND WHEN SIDEBAR OPENED */}
-      {mobileSidebarOpen && (
-        <div 
-          onClick={() => setMobileSidebarOpen(false)}
-          className="fixed inset-0 bg-black/60 z-30 lg:hidden"
-        ></div>
       )}
 
-      {/* MAIN CONTAINER LAYOUT WITH HEADER AND CONTENT SCREEN */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header of the Application */}
-        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden p-2 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-              title="Ouvrir le menu"
-            >
-              <Menu className="h-5.5 w-5.5 text-slate-700" />
-            </button>
-            
-            <button
-              onClick={() => setDesktopSidebarOpen(!desktopSidebarOpen)}
-              className="hidden lg:flex p-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition-all cursor-pointer text-slate-700 gap-2 items-center border border-slate-200 shadow-2xs bg-white"
-              title={desktopSidebarOpen ? "Masquer la barre latérale" : "Afficher la barre latérale"}
-            >
-              <Menu className="h-4.5 w-4.5" />
-              <span className="text-xs font-semibold text-slate-600 font-sans">
-                {desktopSidebarOpen ? "Réduire le menu" : "Développer le menu"}
-              </span>
-            </button>
-            <div className="hidden lg:block">
-              <h2 className="text-sm font-bold text-slate-800 capitalize font-display">
-                {activeTab === 'dashboard' ? 'Tableau de bord étudiant' : 
-                 activeTab === 'cours' ? 'Espace Lecteur des Cours' : 
-                 activeTab === 'exercices' ? 'Workspace d\'Évaluation' : 
-                 activeTab === 'projets' ? 'Milestone Projets' : 
-                 activeTab === 'terminal' ? 'Console Linux & REPL Python' : 
-                 activeTab === 'admin' ? 'Administration des Droits' : 'Guide & Ressources pour Réussir'}
-              </h2>
-            </div>
-          </div>
+      {/* SCREEN SCROLLABLE CONTENT BODY */}
+      <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
+        {activeTab === 'accueil' && (
+          <AccueilView 
+            studentName={studentName} 
+            progress={progress} 
+            onNavigateTab={setActiveTab as any} 
+          />
+        )}
+        {activeTab === 'profil' && (
+          <ProfilView 
+            studentName={studentName} 
+            progress={progress} 
+            theme={theme}
+            setTheme={setTheme}
+            onLogout={handleStudentLogout}
+          />
+        )}
+        {activeTab === 'document' && <DocumentView />}
+        {activeTab === 'certificats' && <CertificatsView studentName={studentName} />}
+        {activeTab === 'badges' && <BadgesView />}
+        {activeTab === 'pratique' && <PratiqueView />}
+        {activeTab === 'entrainement' && <EntrainementView />}
+        
+        {activeTab === 'dashboard' && (
+          <Dashboard 
+            progress={progress}
+            onSelectDay={handleSelectDay}
+            onNavigateTab={setActiveTab as any}
+            onSelectProject={handleSelectProject}
+            unlockedDays={unlockedDays}
+            unlockedProjects={unlockedProjects}
+          />
+        )}
 
-          <div className="flex items-center gap-3">
-            {/* Direct streak flame tracker badge */}
-            <div className="flex items-center gap-1 rounded-full bg-orange-50/50 border border-orange-100 px-3.5 py-1.5 shadow-2xs">
-              <Flame className="h-4.5 w-4.5 text-orange-500 fill-current animate-bounce" />
-              <span className="text-xs font-mono font-bold text-orange-950">
-                {progress.streak} Jour{progress.streak > 1 ? 's' : ''}
-              </span>
-            </div>
+        {activeTab === 'cours' && (
+          <CoursView 
+            progress={progress}
+            onSelectDay={(dayId) => {
+              setSelectedDayId(dayId);
+              setActiveTab('exercices' as any);
+            }}
+            unlockedDays={unlockedDays}
+          />
+        )}
 
-            {/* General progress indicators */}
-            <div className="hidden sm:block bg-slate-100/60 text-slate-700 px-3.5 py-1.5 rounded-full text-xs font-semibold font-mono border border-slate-200">
-              {globalCompleted}/28 Jours
-            </div>
+        {activeTab === 'exercices' && (
+          <ExerciseView
+            dayId={selectedDayId}
+            progress={progress}
+            onPassQuiz={handlePassQuiz}
+            onPassChallenge={handlePassChallenge}
+            onSelectDay={setSelectedDayId}
+            unlockedDays={unlockedDays}
+          />
+        )}
 
-            {/* Student identity + logout */}
-            {studentName && (
-              <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
-                <div className="hidden sm:flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full">
-                  <User className="h-3.5 w-3.5 text-indigo-500" />
-                  <span className="text-xs font-semibold text-indigo-700 max-w-28 truncate">{studentName}</span>
-                </div>
-                <button
-                  onClick={handleStudentLogout}
-                  title="Se déconnecter"
-                  className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </div>
-            )}
-          </div>
-        </header>
+        {activeTab === 'projets' && (
+          <ProjectView
+            progress={progress}
+            activeProjectId={activeProjectId}
+            onSelectProject={setActiveProjectId}
+            onCompleteProject={handleCompleteProject}
+            unlockedProjects={unlockedProjects}
+          />
+        )}
 
-        {/* SCREEN SCROLLABLE CONTENT BODY */}
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
-          {activeTab === 'dashboard' && (
-            <Dashboard 
-              progress={progress}
-              onSelectDay={handleSelectDay}
-              onNavigateTab={setActiveTab}
-              onSelectProject={handleSelectProject}
-              unlockedDays={unlockedDays}
-              unlockedProjects={unlockedProjects}
-            />
-          )}
+        {activeTab === 'admin' && (
+          <AdminView
+            unlockedDays={unlockedDays}
+            unlockedProjects={unlockedProjects}
+            onUpdateUnlockedDays={handleUpdateUnlockedDays}
+            onUpdateUnlockedProjects={handleUpdateUnlockedProjects}
+            isAdminAuthenticated={isAdminAuthenticated}
+            setIsAdminAuthenticated={setIsAdminAuthenticated}
+          />
+        )}
+      </main>
 
-          {activeTab === 'cours' && (
-            <CourseView
-              dayId={selectedDayId}
-              progress={progress}
-              onToggleCompleteDay={handleToggleCompleteDay}
-              onSelectDay={setSelectedDayId}
-              unlockedDays={unlockedDays}
-              isAdminAuthenticated={isAdminAuthenticated}
-            />
-          )}
-
-          {activeTab === 'exercices' && (
-            <ExerciseView
-              dayId={selectedDayId}
-              progress={progress}
-              onPassQuiz={handlePassQuiz}
-              onPassChallenge={handlePassChallenge}
-              onSelectDay={setSelectedDayId}
-              unlockedDays={unlockedDays}
-            />
-          )}
-
-          {activeTab === 'projets' && (
-            <ProjectView
-              progress={progress}
-              activeProjectId={activeProjectId}
-              onSelectProject={setActiveProjectId}
-              onCompleteProject={handleCompleteProject}
-              unlockedProjects={unlockedProjects}
-            />
-          )}
-
-          {activeTab === 'terminal' && (
-            <TerminalView />
-          )}
-
-          {activeTab === 'admin' && (
-            <AdminView
-              unlockedDays={unlockedDays}
-              unlockedProjects={unlockedProjects}
-              onUpdateUnlockedDays={handleUpdateUnlockedDays}
-              onUpdateUnlockedProjects={handleUpdateUnlockedProjects}
-              isAdminAuthenticated={isAdminAuthenticated}
-              setIsAdminAuthenticated={setIsAdminAuthenticated}
-            />
-          )}
-
-          {activeTab === 'outils' && <OutilsView />}
-        </main>
-      </div>
+      {/* Floating AI Coach Widget */}
+      <ChatWidget 
+        contextText={`L'étudiant est actuellement sur l'onglet: ${activeTab}.` + ((activeTab === 'cours' || activeTab === 'exercices') ? ` Le jour sélectionné est le jour ${selectedDayId}.` : '')} 
+      />
     </div>
   );
 }
@@ -769,9 +741,9 @@ function OutilsView() {
                 <ExternalLink className="h-4 w-4 text-slate-350 group-hover:text-indigo-600 transition-colors" />
               </a>
             </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }

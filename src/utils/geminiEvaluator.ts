@@ -95,3 +95,31 @@ ${userCode}
     return null;
   }
 }
+
+export async function analyzeCodeWithGemini(systemPrompt: string, userMessage: string): Promise<{ feedback: string }> {
+  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    return { feedback: "Clé d'API Gemini non configurée." };
+  }
+  
+  const prompt = `${systemPrompt}\n\nQuestion de l'étudiant:\n${userMessage}`;
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+
+    if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+    const data = await response.json();
+    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    return { feedback: textResponse || "Désolé, je n'ai pas de réponse." };
+  } catch (error) {
+    console.error("Error analyzing with Gemini:", error);
+    throw error;
+  }
+}

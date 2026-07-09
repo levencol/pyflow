@@ -1,36 +1,48 @@
 import { useState } from 'react';
-import { KeyRound, RefreshCw, AlertCircle, BookOpen, Zap, Trophy } from 'lucide-react';
-import { fetchStudentAccess, setStoredStudentCode } from '../services/api';
+import { UserPlus, Copy, CheckCircle2, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { setStoredStudentCode } from '../services/api';
 
-interface StudentLoginProps {
+interface StudentRegisterProps {
   onSuccess: (studentName: string, unlockedDays: number[], unlockedProjects: string[]) => void;
   onBack?: () => void;
+  onLogin?: () => void;
 }
 
-export default function StudentLogin({ onSuccess, onBack }: StudentLoginProps) {
+export default function StudentRegister({ onSuccess, onBack, onLogin }: StudentRegisterProps) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) { setError('Veuillez saisir votre email et mot de passe.'); return; }
-    
-    // In our backend, the password acts as the student code
-    const trimmedCode = password.trim();
+    if (!name.trim() || !email.trim() || !password.trim()) { setError('Veuillez remplir tous les champs.'); return; }
 
     setLoading(true);
     setError('');
-    try {
-      const { student, unlocked_days, unlocked_projects } = await fetchStudentAccess(trimmedCode);
-      setStoredStudentCode(trimmedCode);
-      onSuccess(student.name, unlocked_days, unlocked_projects);
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Identifiants invalides.');
-    } finally {
-      setLoading(false);
-    }
+    
+    // Simulate API delay
+    setTimeout(() => {
+      const studentCode = password.trim();
+      // Store in local mock database for future logins
+      try {
+        const mockUsersStr = localStorage.getItem('pyflow_mock_users');
+        const mockUsers = mockUsersStr ? JSON.parse(mockUsersStr) : {};
+        if (mockUsers[studentCode]) {
+           setError('Ce mot de passe / identifiant est déjà utilisé (simulation). Veuillez en choisir un autre.');
+           setLoading(false);
+           return;
+        }
+        mockUsers[studentCode] = { name: name.trim(), email: email.trim(), unlocked_days: [1], unlocked_projects: [] };
+        localStorage.setItem('pyflow_mock_users', JSON.stringify(mockUsers));
+      } catch (err) {
+        console.error("Erreur lors de la sauvegarde locale :", err);
+      }
+
+      setStoredStudentCode(studentCode);
+      onSuccess(name.trim(), [1], []);
+    }, 1000);
   };
 
   return (
@@ -44,40 +56,35 @@ export default function StudentLogin({ onSuccess, onBack }: StudentLoginProps) {
           <div className="inline-flex items-center justify-center h-20 w-20 rounded-[2rem] bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-2xl shadow-indigo-500/30 mx-auto border-4 border-white/50 dark:border-white/10">
             <span className="text-white font-black text-3xl tracking-tight font-display">Py</span>
           </div>
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-display">PyFlow</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium">Formation Python Express</p>
-          </div>
         </div>
 
-        {/* Feature pills */}
-        <div className="flex justify-center gap-3 flex-wrap">
-          {[
-            { icon: BookOpen, label: 'Leçons' },
-            { icon: Zap, label: 'Exercices pratiques' },
-            { icon: Trophy, label: 'Projets guidés' },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-1.5 apple-glass dark:apple-glass-dark px-3 py-1.5 rounded-full text-xs text-slate-700 dark:text-slate-300 font-bold shadow-sm">
-              <Icon className="h-3.5 w-3.5 text-indigo-500" />
-              {label}
-            </div>
-          ))}
-        </div>
-
-        {/* Login card */}
+        {/* Register card */}
         <div className="apple-glass dark:apple-glass-dark border border-white/40 dark:border-white/10 rounded-[2rem] p-8 sm:p-10 shadow-2xl space-y-6">
           <div className="space-y-1.5 text-center mb-8">
             <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center justify-center gap-2 font-display">
-              <KeyRound className="h-6 w-6 text-indigo-500" />
-              Connexion
+              <UserPlus className="h-6 w-6 text-indigo-500" />
+              Créer un compte
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-xs font-medium leading-relaxed max-w-xs mx-auto">
-              Saisissez votre email et le mot de passe généré lors de votre inscription.
+              Rejoignez PyFlow pour commencer votre apprentissage du Python dès aujourd'hui.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Prénom & Nom
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => { setName(e.target.value); setError(''); }}
+                  placeholder="John Doe"
+                  className="w-full bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 px-4 py-3.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-inner"
+                />
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                   Adresse Email
@@ -93,14 +100,14 @@ export default function StudentLogin({ onSuccess, onBack }: StudentLoginProps) {
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Mot de passe unique
+                  Mot de passe
                 </label>
                 <input
                   type="password"
                   value={password}
                   onChange={e => { setPassword(e.target.value); setError(''); }}
-                  placeholder="Votre mot de passe"
-                  className="w-full bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 px-4 py-3.5 rounded-xl font-mono text-sm tracking-widest transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-inner"
+                  placeholder="Choisissez un mot de passe"
+                  className="w-full bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 px-4 py-3.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-inner"
                 />
               </div>
             </div>
@@ -114,12 +121,12 @@ export default function StudentLogin({ onSuccess, onBack }: StudentLoginProps) {
 
             <button
               type="submit"
-              disabled={loading || !password.trim()}
+              disabled={loading || !name.trim() || !email.trim() || !password.trim()}
               className="w-full py-4 apple-btn-primary disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/20 cursor-pointer transition-all flex items-center justify-center gap-2 mt-4"
             >
               {loading
-                ? <><RefreshCw className="h-4 w-4 animate-spin" /> Vérification…</>
-                : <><KeyRound className="h-4 w-4" /> Accéder à ma formation</>
+                ? <><RefreshCw className="h-4 w-4 animate-spin" /> Inscription…</>
+                : <><UserPlus className="h-4 w-4" /> S'inscrire gratuitement</>
               }
             </button>
             
@@ -134,16 +141,15 @@ export default function StudentLogin({ onSuccess, onBack }: StudentLoginProps) {
             )}
           </form>
 
-          <div className="pt-2 border-t border-slate-800 text-center">
-            <p className="text-[10px] text-slate-600">
-              Vous n'avez pas de code ? Contactez votre formateur.
+          <div className="pt-6 border-t border-slate-200 dark:border-slate-800 text-center">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Déjà un compte ?{' '}
+              <button onClick={onLogin} className="text-indigo-400 hover:text-indigo-300 font-bold underline cursor-pointer">
+                Se connecter
+              </button>
             </p>
           </div>
         </div>
-
-        <p className="text-center text-[10px] text-slate-700">
-          PyFlow v1.1 · Formation Python Express
-        </p>
       </div>
     </div>
   );

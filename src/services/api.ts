@@ -200,11 +200,27 @@ export interface StudentAccess {
 }
 
 export async function fetchStudentAccess(studentCode: string): Promise<StudentAccess> {
+  // --- MOCK REGISTRATION SUPPORT ---
+  const mockUsersStr = localStorage.getItem('pyflow_mock_users');
+  if (mockUsersStr) {
+    try {
+      const mockUsers = JSON.parse(mockUsersStr);
+      if (mockUsers[studentCode]) {
+        return {
+          student: { id: studentCode, name: mockUsers[studentCode].name, student_code: studentCode },
+          unlocked_days: mockUsers[studentCode].unlocked_days || [1],
+          unlocked_projects: mockUsers[studentCode].unlocked_projects || []
+        };
+      }
+    } catch (e) {}
+  }
+  // --------------------------------
+
   const res = await fetch(`${STUDENT_FN}/access`, {
     headers: { ...BASE_HEADERS, 'x-student-code': studentCode },
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Code étudiant invalide');
+  if (!res.ok) throw new Error(data.error || 'Identifiants invalides');
   return data;
 }
 
