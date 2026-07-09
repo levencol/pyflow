@@ -8,9 +8,10 @@ interface ProfilViewProps {
   theme: string;
   setTheme: (theme: string) => void;
   onLogout: () => void;
+  onNameChange: (name: string) => void;
 }
 
-export default function ProfilView({ studentName, progress, theme, setTheme, onLogout }: ProfilViewProps) {
+export default function ProfilView({ studentName, progress, theme, setTheme, onLogout, onNameChange }: ProfilViewProps) {
   const [name, setName] = useState(studentName || '');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
@@ -25,6 +26,7 @@ export default function ProfilView({ studentName, progress, theme, setTheme, onL
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile);
+        if (parsed.name) setName(parsed.name);
         if (parsed.email) setEmail(parsed.email);
         if (parsed.bio) setBio(parsed.bio);
         if (parsed.avatarData) setAvatarData(parsed.avatarData);
@@ -40,7 +42,8 @@ export default function ProfilView({ studentName, progress, theme, setTheme, onL
     setIsSaving(true);
     // Simulate API call
     setTimeout(() => {
-      localStorage.setItem('pyflow_profile', JSON.stringify({ email, bio, notifications, avatarData }));
+      localStorage.setItem('pyflow_profile', JSON.stringify({ name, email, bio, notifications, avatarData }));
+      onNameChange(name);
       setIsSaving(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -137,9 +140,8 @@ export default function ProfilView({ studentName, progress, theme, setTheme, onL
                   type="text" 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  readOnly // Locked because it comes from the auth system
-                  className="w-full bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 rounded-xl px-4 py-3 focus:outline-hidden opacity-70 cursor-not-allowed"
-                  title="Le nom ne peut être modifié ici. Il est lié à votre accès."
+                  placeholder="Votre nom complet"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all shadow-inner"
                 />
               </div>
 

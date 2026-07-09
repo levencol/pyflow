@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, Clock, CheckCircle2, ChevronRight, HelpCircle, Eye, EyeOff, Terminal, Sparkles, BookOpen, Lock } from 'lucide-react';
+import { Trophy, Clock, CheckCircle2, ChevronRight, HelpCircle, Eye, EyeOff, Terminal, Sparkles, BookOpen, Lock, ArrowLeft, Search, ChevronDown, Activity, Zap, Database, BarChart2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Markdown from 'react-markdown';
 import { LearnProject, UserProgress } from '../types';
@@ -24,7 +24,7 @@ const compactMarkdownComponents = {
 interface ProjectViewProps {
   progress: UserProgress;
   activeProjectId: string | null;
-  onSelectProject: (projectId: string) => void;
+  onSelectProject: (projectId: string | null) => void;
   onCompleteProject: (projectId: string) => void;
   unlockedProjects: string[];
 }
@@ -47,9 +47,126 @@ export default function ProjectView({ progress, activeProjectId, onSelectProject
   // Active step hint toggler
   const [showHint, setShowHint] = useState<Record<number, boolean>>({});
 
+  // Catalog state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTech, setSelectedTech] = useState('Tout');
+
+  const TECHNOLOGIES = ["Tout", "Python", "SQL", "R", "Power BI", "Tableau", "Excel", "ChatGPT", "Azure", "Databricks", "Alteryx", "dbt", "Theory", "KNIME", "OpenAI", "PyTorch", "Snowflake", "Spark", "BigQuery", "Redshift"];
+
   const toggleHint = (stepId: number) => {
     setShowHint(prev => ({ ...prev, [stepId]: !prev[stepId] }));
   };
+
+  const handleQuitProject = () => {
+    onSelectProject(null as unknown as string); // Need to allow null upstream or just cast, wait, onSelectProject takes string. I'll just change the upstream type if needed, but in App.tsx it's `useState<string | null>(null)` so it accepts null. Wait, the prop type is `(projectId: string) => void`. Let me change the prop type to `(projectId: string | null) => void`.
+  };
+
+  if (activeProjectId === null) {
+    const filteredProjects = listProjects.filter(p => {
+      const matchSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchTech = selectedTech === 'Tout' || p.technologies.includes(selectedTech);
+      return matchSearch && matchTech;
+    });
+
+    return (
+      <div className="w-full max-w-6xl mx-auto space-y-8 pb-12 animate-fade-in relative">
+        {/* Filters */}
+        <div className="space-y-6">
+          <div className="flex flex-wrap gap-2">
+            {TECHNOLOGIES.map(tech => (
+              <button
+                key={tech}
+                onClick={() => setSelectedTech(tech)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${
+                  selectedTech === tech
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                {tech}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+              {filteredProjects.length} projets
+            </div>
+            <div className="flex w-full sm:w-auto gap-3">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher des projets"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow text-slate-900 dark:text-white"
+                />
+              </div>
+              <div className="relative">
+                <select className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-4 pr-10 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer text-slate-900 dark:text-white">
+                  <option>Sujet</option>
+                  <option>Nouveautés</option>
+                  <option>Popularité</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              </div>
+              <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <Activity className="h-4 w-4" /> Autres filtres
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProjects.map(proj => {
+            const isCompleted = progress.completedProjects.includes(proj.id);
+            return (
+              <div
+                key={proj.id}
+                className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300 flex flex-col h-full cursor-pointer"
+                onClick={() => handleSelectProject(proj.id)}
+              >
+                <div className="p-6 flex-1 flex flex-col">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-3">
+                    Projet
+                  </span>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight font-display mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    {proj.title}
+                  </h3>
+                  
+                  <div className="flex items-center gap-1.5 mb-4">
+                    <BarChart2 className={`h-4 w-4 ${proj.level === 'Débutant' ? 'text-emerald-500' : proj.level === 'Intermédiaire' ? 'text-amber-500' : 'text-red-500'}`} />
+                    <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">{proj.level}</span>
+                  </div>
+
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-auto">
+                    {proj.description}
+                  </p>
+
+                  <div className="mt-6">
+                    <span className="inline-block px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded">
+                      Prêt pour le projet
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 font-medium text-sm">
+                    <Clock className="h-4 w-4" /> {proj.estimatedTime}
+                  </div>
+                  <button className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600">
+                    {isCompleted ? 'Relancer' : 'Commencer'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   if (isLocked) {
     return (
@@ -142,6 +259,13 @@ export default function ProjectView({ progress, activeProjectId, onSelectProject
       transition={{ duration: 0.4 }}
       className="space-y-8"
     >
+      <button 
+        onClick={handleQuitProject}
+        className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+      >
+        <ArrowLeft className="h-4 w-4" /> Retour au catalogue
+      </button>
+
       {/* Portfolio Selector grid list */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {listProjects.map((proj, idx) => {

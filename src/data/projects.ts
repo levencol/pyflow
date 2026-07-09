@@ -253,5 +253,59 @@ def delete_todo(todo_id):
         
     base_taches = [t for t in base_taches if t["id"] != todo_id]
     return jsonify({"success": True}), 200`
+  },
+  {
+    id: 'proj_debutant_2',
+    title: "Création de fonctions d'inscription essentielles pour aider à valider les nouveaux utilisateurs",
+    level: 'Débutant',
+    description: "Créez des fonctions Python personnalisées pour valider la saisie utilisateur !",
+    estimatedTime: '1 h',
+    technologies: ['Python'],
+    steps: [
+      {
+        id: 1,
+        title: "Démarrage",
+        instruction: "Initialisez le projet.",
+        hint: "Rien",
+        initialCode: "print('Hello')"
+      }
+    ],
+    solutionCode: "print('Done')"
+  },
+  {
+    id: 'proj_debutant_3',
+    title: "Nettoyer des données avec l'IA générative",
+    level: 'Débutant',
+    description: "L'IA générative pour nettoyer les data, corriger les doublons, valeurs nulles et le formatage pour obtenir des datasets cohérents et précis.",
+    estimatedTime: '1 h',
+    technologies: ['ChatGPT', 'Python'],
+    steps: [
+      {
+        id: 1,
+        title: "Démarrage",
+        instruction: "Initialisez le projet.",
+        hint: "Rien",
+        initialCode: "print('Hello')"
+      }
+    ],
+    solutionCode: "print('Done')"
+  },
+  {
+    id: 'proj_debutant_4',
+    title: "Étude de cas en data storytelling : filières universitaires",
+    level: 'Débutant',
+    description: "Le récit de données est très recherché qui améliore l'analyse. Apprenez et créez des visualisations grâce au dataset d'une université.",
+    estimatedTime: '1 h',
+    technologies: ['Power BI', 'Python'],
+    steps: [
+      {
+        id: 1,
+        title: "Démarrage",
+        instruction: "Initialisez le projet.",
+        hint: "Rien",
+        initialCode: "print('Hello')"
+      }
+    ],
+    solutionCode: "print('Done')"
   }
 ];

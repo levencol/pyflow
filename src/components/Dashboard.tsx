@@ -8,7 +8,7 @@ import { fetchLeaderboard, LeaderboardEntry } from '../services/api';
 interface DashboardProps {
   progress: UserProgress;
   onSelectDay: (dayId: number) => void;
-  onNavigateTab: (tab: 'cours' | 'exercices' | 'projets') => void;
+  onNavigateTab: (tab: 'cours' | 'exercices' | 'projets' | 'classement') => void;
   onSelectProject: (projectId: string) => void;
   unlockedDays: number[];
   unlockedProjects: string[];
@@ -199,7 +199,10 @@ export default function Dashboard({ progress, onSelectDay, onNavigateTab, onSele
               💡 Conseils
             </button>
             <button
-              onClick={() => setActiveSideTab('leaderboard')}
+              onClick={() => {
+                setActiveSideTab('leaderboard');
+                onNavigateTab('classement');
+              }}
               className={`flex-1 py-2.5 text-center text-xs font-bold transition-all border-b-2 cursor-pointer ${
                 activeSideTab === 'leaderboard'
                   ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'

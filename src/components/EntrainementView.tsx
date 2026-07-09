@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Flame, Brain, Check, X as XIcon, ArrowRight, Trophy, Zap, Activity, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { Flame, Brain, Check, X as XIcon, ArrowRight, Trophy, Zap, Activity, RotateCcw, Search, ChevronDown, ArrowLeft, Database, BookOpen, Play } from 'lucide-react';
 
 const QUESTIONS = [
   {
@@ -59,7 +59,33 @@ const QUESTIONS = [
   }
 ];
 
+const MOCK_TRAININGS = [
+  { id: 't1', title: 'Structures de données et algorithmes en Python', technology: 'Python' },
+  { id: 't2', title: "Principes d'ingénierie logicielle en Python", technology: 'Python' },
+  { id: 't3', title: 'Écrire du code Python efficace', technology: 'Python' },
+  { id: 't4', title: 'Introduction à la programmation orientée objet en Python', technology: 'Python' },
+  { id: 't5', title: 'Écrire des fonctions en Python', technology: 'Python' },
+  { id: 't6', title: 'Types de données en Python', technology: 'Python' },
+  { id: 't7', title: "Requêtes SQL avancées pour l'analyse", technology: 'SQL' },
+  { id: 't8', title: 'Nettoyage de données avec pandas', technology: 'Python' },
+  { id: 't9', title: 'Visualisation de données avec ggplot2', technology: 'R' },
+  { id: 't10', title: 'Fondamentaux cloud pour développeurs', technology: 'AWS' },
+];
+
+const TECHNOLOGIES = ["Tout", "Python", "SQL", "R", "Power BI", "Tableau", "Excel", "AWS", "Azure", "Snowflake", "Java", "Claude", "ChatGPT"];
+
+const renderTechIcon = (tech: string) => {
+  if (tech === 'Python') return <div className="h-5 w-5 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold text-white font-mono shrink-0">Py</div>;
+  if (tech === 'SQL') return <Database className="h-4 w-4 text-emerald-600" />;
+  if (tech === 'R') return <div className="h-5 w-5 bg-blue-400 rounded-full flex items-center justify-center text-[10px] font-bold text-white font-mono shrink-0">R</div>;
+  if (tech === 'AWS') return <div className="h-5 w-5 bg-orange-500 rounded flex items-center justify-center text-[8px] font-bold text-white font-mono shrink-0">AWS</div>;
+  return <BookOpen className="h-4 w-4 text-slate-500" />;
+};
+
 export default function EntrainementView() {
+  const [activeTraining, setActiveTraining] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTech, setSelectedTech] = useState('Tout');
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
@@ -101,6 +127,141 @@ export default function EntrainementView() {
     setIsFinished(false);
   };
 
+  const handleQuitTraining = () => {
+    setActiveTraining(null);
+    handleRestart();
+  };
+
+  const filteredTrainings = MOCK_TRAININGS.filter(t => {
+    const matchSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchTech = selectedTech === 'Tout' || t.technology === selectedTech;
+    return matchSearch && matchTech;
+  });
+
+  if (activeTraining === null) {
+    return (
+      <div className="w-full max-w-6xl mx-auto space-y-8 pb-12 animate-fade-in relative">
+        {/* Banner (Hero) */}
+        <div className="w-full bg-[#0B1528] rounded-[2rem] p-8 md:p-12 relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 text-white">
+          <div className="flex-1 space-y-6 z-10">
+            <div className="flex flex-wrap items-center gap-4">
+              <h1 className="text-3xl md:text-5xl font-black tracking-tight font-display">Entraînement</h1>
+              <div className="px-3 py-1.5 bg-[#f59e0b] text-[#78350f] rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                <RotateCcw className="h-3 w-3" /> Renforcez ce que vous apprenez
+              </div>
+            </div>
+            <p className="text-slate-300 text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
+              Entretenez vos compétences grâce à des défis quotidiens rapides sur ordinateur ou sur mobile. Vous gagnez des XP pour chaque série d'entraînements.
+            </p>
+          </div>
+          {/* Decorative graphic right side */}
+          <div className="hidden md:flex relative w-64 h-64 shrink-0 z-10 items-center justify-center">
+            {/* Outer dotted circle (mocked with a border) */}
+            <div className="absolute inset-0 rounded-full border-2 border-dashed border-slate-700 animate-spin-slow"></div>
+            {/* Center icon */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-orange-400 font-black tracking-widest text-sm uppercase">
+              S'entraîner
+            </div>
+            {/* Decorative dots/icons */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center">
+              <Activity className="h-4 w-4 text-slate-400" />
+            </div>
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <Database className="h-4 w-4 text-white" />
+            </div>
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center">
+              <BookOpen className="h-4 w-4 text-slate-400" />
+            </div>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center">
+              <Zap className="h-4 w-4 text-slate-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="space-y-6">
+          <div className="flex flex-wrap gap-2">
+            {TECHNOLOGIES.map(tech => (
+              <button
+                key={tech}
+                onClick={() => setSelectedTech(tech)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${
+                  selectedTech === tech
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                {tech}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+              {filteredTrainings.length} sessions d'entraînement
+            </div>
+            <div className="flex w-full sm:w-auto gap-3">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher des cours"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow text-slate-900 dark:text-white"
+                />
+              </div>
+              <div className="relative">
+                <select className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-4 pr-10 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer text-slate-900 dark:text-white">
+                  <option>Sujet</option>
+                  <option>Nouveautés</option>
+                  <option>Popularité</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTrainings.map(training => (
+            <div
+              key={training.id}
+              className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300 flex flex-col h-full cursor-pointer"
+              onClick={() => setActiveTraining(training.id)}
+            >
+              <div className="p-6 flex-1 flex flex-col">
+                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-3">
+                  Entraînement
+                </span>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight font-display mb-auto group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  {training.title}
+                </h3>
+                <div className="mt-8">
+                  <span className="inline-block px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded">
+                    Prêt pour l'entraînement
+                  </span>
+                </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {renderTechIcon(training.technology)}
+                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                    {training.technology}
+                  </span>
+                </div>
+                <button className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600">
+                  Commencer
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (isFinished) {
     return (
       <div className="w-full max-w-4xl mx-auto h-[calc(100vh-8rem)] flex flex-col items-center justify-center animate-fade-in p-6">
@@ -136,6 +297,12 @@ export default function EntrainementView() {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12 animate-fade-in relative">
+      <button 
+        onClick={handleQuitTraining}
+        className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+      >
+        <ArrowLeft className="h-4 w-4" /> Retour au catalogue
+      </button>
       
       {/* 1. Header & Progress */}
       <div className="flex flex-col gap-6">

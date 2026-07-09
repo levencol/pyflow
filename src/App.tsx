@@ -54,6 +54,7 @@ import CourseView from './components/CourseView';
 import ExerciseView from './components/ExerciseView';
 import ProjectView from './components/ProjectView';
 import TerminalView from './components/TerminalView';
+import ClassementView from './components/ClassementView';
 import CoursView from './components/CoursView';
 import AdminView from './components/AdminView';
 import ChatWidget from './components/ChatWidget';
@@ -83,11 +84,11 @@ export default function App() {
   // Navigation sync with URL hash
   const getValidTabFromHash = () => {
     const hash = window.location.hash.replace('#', '');
-    const validTabs = ['accueil', 'dashboard', 'profil', 'document', 'cours', 'certificats', 'badges', 'exercices', 'pratique', 'entrainement', 'projets', 'admin'];
+    const validTabs = ['accueil', 'dashboard', 'profil', 'document', 'cours', 'certificats', 'badges', 'exercices', 'pratique', 'entrainement', 'projets', 'admin', 'classement'];
     return validTabs.includes(hash) ? (hash as any) : 'accueil';
   };
 
-  const [activeTab, setActiveTabState] = useState<'accueil' | 'dashboard' | 'profil' | 'document' | 'cours' | 'certificats' | 'badges' | 'exercices' | 'pratique' | 'entrainement' | 'projets' | 'admin'>(getValidTabFromHash());
+  const [activeTab, setActiveTabState] = useState<'accueil' | 'dashboard' | 'profil' | 'document' | 'cours' | 'certificats' | 'badges' | 'exercices' | 'pratique' | 'entrainement' | 'projets' | 'admin' | 'classement'>(getValidTabFromHash());
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -134,7 +135,20 @@ export default function App() {
       }
       fetchStudentAccess(studentCode)
         .then(({ student, unlocked_days, unlocked_projects }) => {
-          setStudentName(student.name);
+          let initialName = student.name;
+          try {
+            const savedProfile = localStorage.getItem('pyflow_profile');
+            if (savedProfile) {
+              const parsed = JSON.parse(savedProfile);
+              if (parsed.name) {
+                initialName = parsed.name;
+              }
+            }
+          } catch (e) {
+            console.error(e);
+          }
+          
+          setStudentName(initialName);
           setUnlockedDays(unlocked_days);
           setUnlockedProjects(unlocked_projects);
           localStorage.setItem('pyflow_unlocked_days', JSON.stringify(unlocked_days));
@@ -455,7 +469,8 @@ export default function App() {
                 { id: 'exercices', label: 'Leçon & Exercices', icon: Code },
                 { id: 'pratique', label: 'Pratique', icon: CheckSquare },
                 { id: 'entrainement', label: 'Entrainement', icon: Flame },
-                { id: 'projets', label: 'Projets', icon: Trophy }
+                { id: 'projets', label: 'Projets', icon: Trophy },
+                { id: 'classement', label: 'Classement', icon: Award }
               ].map(item => (
                 <button
                   key={item.id}
@@ -511,6 +526,7 @@ export default function App() {
             theme={theme}
             setTheme={setTheme}
             onLogout={handleStudentLogout}
+            onNameChange={setStudentName}
           />
         )}
         {activeTab === 'document' && <DocumentView />}
@@ -518,6 +534,7 @@ export default function App() {
         {activeTab === 'badges' && <BadgesView />}
         {activeTab === 'pratique' && <PratiqueView />}
         {activeTab === 'entrainement' && <EntrainementView />}
+        {activeTab === 'classement' && <ClassementView studentName={studentName} progress={progress} />}
         
         {activeTab === 'dashboard' && (
           <Dashboard 

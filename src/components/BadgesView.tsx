@@ -1,4 +1,4 @@
-import { Shield, Flame, Zap, Trophy, Target, Star, Lock, CheckCircle2, Medal, X } from 'lucide-react';
+import { Shield, Flame, Zap, Trophy, Target, Star, Lock, CheckCircle2, Medal, X, Users, Compass, Hammer, Clock, Brain, Rocket } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface Badge {
@@ -7,7 +7,7 @@ interface Badge {
   description: string;
   iconName: string;
   color: string;
-  category: 'Progression' | 'Régularité' | 'Maîtrise' | 'Vitesse';
+  category: 'Progression' | 'Régularité' | 'Maîtrise' | 'Vitesse' | 'Communauté' | 'Exploration' | 'Projet';
   unlocked: boolean;
   progress?: { current: number; total: number };
 }
@@ -69,6 +69,61 @@ const MOCK_BADGES: Badge[] = [
     category: 'Progression',
     unlocked: false,
     progress: { current: 8, total: 10 }
+  },
+  {
+    id: 'b7',
+    name: "Esprit d'Équipe",
+    description: "Vous avez aidé 10 autres apprenants sur le forum d'entraide.",
+    iconName: 'users',
+    color: 'from-pink-400 to-pink-600',
+    category: 'Communauté',
+    unlocked: false,
+    progress: { current: 4, total: 10 }
+  },
+  {
+    id: 'b8',
+    name: 'Explorateur Curieux',
+    description: "Vous avez consulté toutes les rubriques annexes (documentation, glossaire).",
+    iconName: 'compass',
+    color: 'from-teal-400 to-teal-600',
+    category: 'Exploration',
+    unlocked: true,
+  },
+  {
+    id: 'b9',
+    name: 'Bâtisseur',
+    description: "Vous avez soumis votre premier projet pratique.",
+    iconName: 'hammer',
+    color: 'from-orange-400 to-orange-600',
+    category: 'Projet',
+    unlocked: false,
+  },
+  {
+    id: 'b10',
+    name: 'Oiseau de Nuit',
+    description: "Vous avez validé une session d'apprentissage entre minuit et 4h du matin.",
+    iconName: 'clock',
+    color: 'from-slate-700 to-slate-900',
+    category: 'Régularité',
+    unlocked: true,
+  },
+  {
+    id: 'b11',
+    name: "Génie de l'Algo",
+    description: "Vous avez résolu un défi d'algorithmique complexe avec une complexité optimale.",
+    iconName: 'brain',
+    color: 'from-fuchsia-400 to-fuchsia-600',
+    category: 'Maîtrise',
+    unlocked: false,
+  },
+  {
+    id: 'b12',
+    name: 'Vitesse Lumière',
+    description: "Vous avez terminé un quiz de 10 questions en moins de 2 minutes avec 100% de réussite.",
+    iconName: 'rocket',
+    color: 'from-yellow-400 to-yellow-600',
+    category: 'Vitesse',
+    unlocked: false,
   }
 ];
 
@@ -80,6 +135,12 @@ const getIcon = (name: string, className: string) => {
     case 'star': return <Star className={className} />;
     case 'medal': return <Medal className={className} />;
     case 'shield': return <Shield className={className} />;
+    case 'users': return <Users className={className} />;
+    case 'compass': return <Compass className={className} />;
+    case 'hammer': return <Hammer className={className} />;
+    case 'clock': return <Clock className={className} />;
+    case 'brain': return <Brain className={className} />;
+    case 'rocket': return <Rocket className={className} />;
     default: return <Trophy className={className} />;
   }
 };

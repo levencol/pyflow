@@ -363,12 +363,6 @@ export default function ExerciseView({ dayId, progress, onPassQuiz, onPassChalle
               La leçon théorique associée à cette journée de formation (Jour {dayId}) est actuellement verrouillée par l'administration.
             </p>
             <div className="flex justify-center gap-2">
-              <button
-                onClick={() => setDirectoryFilter('all')}
-                className="px-3.5 py-2 apple-btn-primary font-semibold text-xs rounded-xl transition-all cursor-pointer"
-              >
-                Parcourir la Bibliothèque Globale d'Exercices
-              </button>
             </div>
           </div>
 
@@ -421,27 +415,9 @@ export default function ExerciseView({ dayId, progress, onPassQuiz, onPassChalle
               setSelectedQuizIdx(0);
               setSelectedChallengeIdx(0);
             }}
-            className={`px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-colors ${
-              directoryFilter === 'current'
-                ? 'bg-white dark:bg-slate-800 font-semibold text-indigo-700 dark:text-indigo-400 shadow-3xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
+            className="px-3 py-1.5 rounded-lg font-medium cursor-default transition-colors bg-white dark:bg-slate-800 font-semibold text-indigo-700 dark:text-indigo-400 shadow-3xs"
           >
             Syllabus Jour {currentDay.id} ({quizQuestions.filter(q => q.dayId === currentDay.id).length + codingChallenges.filter(c => c.dayId === currentDay.id).length})
-          </button>
-          <button
-            onClick={() => {
-              setDirectoryFilter('all');
-              setSelectedQuizIdx(0);
-              setSelectedChallengeIdx(0);
-            }}
-            className={`px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-colors ${
-              directoryFilter === 'all'
-                ? 'bg-white dark:bg-slate-800 font-semibold text-indigo-700 dark:text-indigo-400 shadow-3xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            Bibliothèque Globale ({quizQuestions.length + codingChallenges.length})
           </button>
         </div>
       </div>
@@ -629,12 +605,6 @@ export default function ExerciseView({ dayId, progress, onPassQuiz, onPassChalle
               <div className="flex flex-col items-center justify-center p-12 text-center text-slate-400 dark:text-slate-500 space-y-3">
                 <HelpCircle className="h-10 w-10 text-slate-350 dark:text-slate-600" />
                 <p className="text-xs">Aucun quiz à traiter pour ce jour de formation.</p>
-                <button 
-                  onClick={() => setDirectoryFilter('all')}
-                  className="px-3.5 py-1.5 apple-btn dark:apple-btn-dark font-semibold text-xs rounded-lg transition-colors"
-                >
-                  Découvrir tous les quizz de la bibliothèque
-                </button>
               </div>
             )}
           </div>
