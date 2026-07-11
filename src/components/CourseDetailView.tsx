@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, Lock, BookOpen } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Lock, BookOpen, PlayCircle, Tag } from 'lucide-react';
 import { UserProgress } from '../types';
 import { courseDays } from '../data/curriculum';
 
@@ -13,6 +13,7 @@ interface CourseDetailViewProps {
     time: string;
     isCompleted: boolean;
     tech: string;
+    tags?: string[];
   };
   progress: UserProgress;
   onBack: () => void;
@@ -31,6 +32,13 @@ export default function CourseDetailView({ course, progress, onBack, onSelectDay
   const totalDays = daysForCourse.length;
   const completedDays = daysForCourse.filter(d => progress.completedDays.includes(d.id)).length;
   const progressPercent = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+
+  // Group days into chunks to simulate chapters/modules
+  const chunkSize = 5;
+  const modules = [];
+  for (let i = 0; i < daysForCourse.length; i += chunkSize) {
+    modules.push(daysForCourse.slice(i, i + chunkSize));
+  }
 
   return (
     <motion.div 
@@ -53,9 +61,17 @@ export default function CourseDetailView({ course, progress, onBack, onSelectDay
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
         
         <div className="relative z-10 space-y-4 max-w-2xl text-white">
-          <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-xs font-bold uppercase tracking-wider">
-            {course.level}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-xs font-bold uppercase tracking-wider">
+              {course.level}
+            </span>
+            {course.tags?.map(tag => (
+              <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1 bg-black/10 backdrop-blur-md border border-white/20 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Tag className="h-3 w-3" />
+                {tag}
+              </span>
+            ))}
+          </div>
           <h1 className="text-4xl sm:text-5xl font-black font-display tracking-tight leading-tight drop-shadow-sm">
             {course.title}
           </h1>
@@ -85,7 +101,7 @@ export default function CourseDetailView({ course, progress, onBack, onSelectDay
             </svg>
             <span className="absolute text-xl font-bold text-white drop-shadow-sm">{progressPercent}%</span>
           </div>
-          <span className="text-white/80 font-semibold text-sm uppercase tracking-wider">{completedDays}/{totalDays} Jours</span>
+          <span className="text-white/80 font-semibold text-sm uppercase tracking-wider">{completedDays}/{totalDays} Leçons</span>
           <span className="text-white font-bold text-sm mt-1">complété</span>
         </div>
       </div>
@@ -93,60 +109,68 @@ export default function CourseDetailView({ course, progress, onBack, onSelectDay
       <div className="pt-6">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-indigo-500" />
-          Programme du cours - {totalDays} jours
+          Programme du cours
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {daysForCourse.map((day, idx) => {
-            const isDayCompleted = progress.completedDays.includes(day.id);
-            const isDayLocked = !unlockedDays.includes(day.id);
-            
+        <div className="space-y-6">
+          {modules.map((chunk, moduleIndex) => {
             return (
-              <motion.button
-                key={day.id}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onSelectDay(day.id)}
-                className={`relative p-5 rounded-2xl border text-left transition-all overflow-hidden group cursor-pointer ${
-                  isDayCompleted
-                    ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/50 hover:shadow-md'
-                    : isDayLocked
-                    ? 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 opacity-75'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${
-                    isDayCompleted
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-800/40 dark:text-emerald-300'
-                      : isDayLocked
-                      ? 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                      : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300'
-                  }`}>
-                    J-{idx + 1}
-                  </span>
-                  
-                  {isDayCompleted ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  ) : isDayLocked ? (
-                    <Lock className="h-4.5 w-4.5 text-slate-400" />
-                  ) : null}
+              <div key={moduleIndex} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">Chapitre {moduleIndex + 1}</p>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white">Titre du Chapitre</h3>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <PlayCircle className="h-4 w-4 text-slate-400" />
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{chunk.length} Leçons</span>
+                    </div>
+                  </div>
                 </div>
                 
-                <h3 className={`font-bold text-base mb-2 line-clamp-1 ${
-                  isDayCompleted ? 'text-emerald-950 dark:text-emerald-100' : 'text-slate-900 dark:text-slate-100'
-                }`}>
-                  {day.title}
-                </h3>
-                
-                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                  {day.description}
-                </p>
-                
-                {!isDayLocked && !isDayCompleted && (
-                  <div className="absolute inset-0 border-2 border-transparent group-hover:border-indigo-500/20 dark:group-hover:border-indigo-400/20 rounded-2xl transition-colors pointer-events-none"></div>
-                )}
-              </motion.button>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                  {chunk.map((day, lessonIndex) => {
+                    const isDayCompleted = progress.completedDays.includes(day.id);
+                    const isDayLocked = !unlockedDays.includes(day.id);
+
+                    return (
+                      <div 
+                        key={day.id} 
+                        onClick={() => { if (!isDayLocked) onSelectDay(day.id); }}
+                        className={`p-4 sm:p-6 flex items-center gap-4 transition-colors group ${
+                          isDayLocked ? 'opacity-75 cursor-not-allowed bg-slate-50 dark:bg-slate-800/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer'
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                          isDayCompleted 
+                            ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' 
+                            : isDayLocked
+                            ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
+                        }`}>
+                          {isDayCompleted ? <CheckCircle2 className="h-5 w-5" /> : isDayLocked ? <Lock className="h-4.5 w-4.5" /> : <span className="text-sm font-bold">{moduleIndex * chunkSize + lessonIndex + 1}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`font-bold text-base transition-colors ${
+                            isDayCompleted ? 'text-emerald-950 dark:text-emerald-100' : 'text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
+                          }`}>
+                            {day.title}
+                          </h4>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 truncate">{day.description}</p>
+                        </div>
+                        <div className="shrink-0 flex items-center">
+                          {!isDayLocked && (
+                            <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:border-indigo-300 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400">
+                              {isDayCompleted ? 'Revoir' : 'Commencer'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

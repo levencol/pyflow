@@ -20,7 +20,8 @@ export const MOCK_COURSES = [
     author: { name: 'PyFlow', role: 'Équipe Pédagogique', img: 'https://ui-avatars.com/api/?name=PyFlow&background=0f172a&color=fff&bold=true' }, 
     time: '4 h', 
     isCompleted: true, 
-    tech: 'Python' 
+    tech: 'Python',
+    tags: ['Python', 'VS Code', 'Git']
   },
   { 
     id: 'c2', 
@@ -30,7 +31,8 @@ export const MOCK_COURSES = [
     author: { name: 'PyFlow', role: 'Équipe Pédagogique', img: 'https://ui-avatars.com/api/?name=PyFlow&background=0f172a&color=fff&bold=true' }, 
     time: '5 h', 
     isCompleted: true, 
-    tech: 'Python' 
+    tech: 'Python',
+    tags: ['Python', 'Pandas', 'NumPy']
   },
   { 
     id: 'c3', 
@@ -40,7 +42,8 @@ export const MOCK_COURSES = [
     author: { name: 'PyFlow', role: 'Équipe Pédagogique', img: 'https://ui-avatars.com/api/?name=PyFlow&background=0f172a&color=fff&bold=true' }, 
     time: '6 h', 
     isCompleted: false, 
-    tech: 'Python' 
+    tech: 'Python',
+    tags: ['Python', 'POO', 'Architecture']
   }
 ];
 

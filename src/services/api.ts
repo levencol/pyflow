@@ -212,7 +212,7 @@ export async function fetchStudentAccess(studentCode: string): Promise<StudentAc
           unlocked_projects: mockUsers[studentCode].unlocked_projects || []
         };
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   // --------------------------------
 
@@ -296,7 +296,7 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
       }
 
       const completedDaysCount = Array.isArray(prog.completed_days) ? prog.completed_days.length : 0;
-      
+
       const completedQuizzesCount = typeof prog.completed_quizzes === 'object' && prog.completed_quizzes !== null
         ? Object.keys(prog.completed_quizzes).filter(k => prog.completed_quizzes[k]).length
         : 0;

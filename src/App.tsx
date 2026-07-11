@@ -467,7 +467,7 @@ export default function App() {
                 { id: 'cours', label: 'Cours', icon: BookOpen },
                 { id: 'certificats', label: 'Certificats', icon: Award },
                 { id: 'badges', label: 'Badges', icon: Shield },
-                { id: 'exercices', label: 'Leçon & Exercices', icon: Code },
+                { id: 'exercices', label: 'Exercices', icon: Code },
                 { id: 'pratique', label: 'Pratique', icon: CheckSquare },
                 { id: 'entrainement', label: 'Entrainement', icon: Flame },
                 { id: 'projets', label: 'Projets', icon: Trophy },

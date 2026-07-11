@@ -1,5 +1,38 @@
 export type PhaseType = 'Débutant' | 'Intermédiaire' | 'Expert';
 
+export interface Lesson {
+  id: number | string;
+  phase?: PhaseType;
+  title: string;
+  description: string;
+  isActive?: boolean;
+  topics?: string[];
+  contentMarkdown?: string;
+  codeExample?: string;
+  expectedOutput?: string;
+  adminGuide?: string;
+}
+
+export interface Chapter {
+  id: string;
+  title: string;
+  isActive?: boolean;
+  lessons: Lesson[];
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  status: 'Brouillon' | 'Publié' | 'Archivé';
+  createdAt: string;
+  updatedAt: string;
+  description: string;
+  studentCount: number;
+  duration?: number;
+  technologies: string[];
+  chapters: Chapter[];
+}
+
 export interface CourseDay {
   id: number;
   phase: PhaseType;
@@ -15,6 +48,7 @@ export interface CourseDay {
 export interface QuizQuestion {
   id: string;
   dayId: number;
+  lessonId?: string;
   question: string;
   options: string[];
   answerIndex: number;
@@ -24,6 +58,7 @@ export interface QuizQuestion {
 export interface CodingChallenge {
   id: string;
   dayId: number;
+  chapterId?: string;
   title: string;
   description: string;
   instructions: string[];

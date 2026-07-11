@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, Key, LogOut, Eye, EyeOff, RefreshCw, AlertCircle,
-  LayoutDashboard, Users, BookOpen, Settings
+  LayoutDashboard, Users, BookOpen, Settings, FileText, Award, Stamp,
+  Menu, ChevronLeft
 } from 'lucide-react';
 import {
   adminLogin, adminLogout,
@@ -18,6 +19,9 @@ import { projects } from '../data/projects';
 import AdminDashboard from './admin/AdminDashboard';
 import AdminStudents from './admin/AdminStudents';
 import AdminContent from './admin/AdminContent';
+import AdminDocuments from './admin/AdminDocuments';
+import AdminBadges from './admin/AdminBadges';
+import AdminCertificates from './admin/AdminCertificates';
 import AdminSettings from './admin/AdminSettings';
 
 interface AdminViewProps {
@@ -36,7 +40,8 @@ export default function AdminView({ isAdminAuthenticated, setIsAdminAuthenticate
   const [adminName, setAdminName] = useState<string>('');
   
   // Navigation
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'students' | 'content' | 'settings'>('dashboard');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'students' | 'content' | 'documents' | 'badges' | 'certificates' | 'settings'>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Global Data State
   const [students, setStudents] = useState<Student[]>([]);
@@ -237,26 +242,46 @@ export default function AdminView({ isAdminAuthenticated, setIsAdminAuthenticate
   // --- Render Admin Layout ---
   const navItems = [
     { id: 'dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
-    { id: 'students', label: 'Étudiants & Accès', icon: Users },
+    { id: 'students', label: 'Étudiants', icon: Users },
     { id: 'content', label: 'Contenu & Projets', icon: BookOpen },
+    { id: 'documents', label: 'Documents', icon: FileText },
+    { id: 'badges', label: 'Badges & Réc', icon: Award },
+    { id: 'certificates', label: 'Certificats', icon: Stamp },
     { id: 'settings', label: 'Paramètres', icon: Settings },
   ] as const;
 
   return (
-    <div className="flex flex-col lg:flex-row h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white -m-6 rounded-3xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800">
+    <div className="flex h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white -m-6 rounded-3xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 relative">
+      {/* Mobile Backdrop */}
+      {isSidebarOpen && (
+        <div 
+          className="lg:hidden absolute inset-0 bg-slate-900/20 dark:bg-slate-900/50 backdrop-blur-sm z-20"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-full lg:w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/20">
-            <Shield className="h-5 w-5" />
+      <aside className={`absolute lg:static top-0 left-0 h-full z-30 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 transition-all duration-300 ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:overflow-hidden'}`}>
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between min-w-[255px]">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/20">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="font-display font-black text-lg leading-tight truncate">PyFlow Admin</h1>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase">Console</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-display font-black text-lg leading-tight">PyFlow Admin</h1>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase">Console</p>
-          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)} 
+            className="p-1.5 -mr-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
+            title="Masquer le menu"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto min-w-[255px]">
           {navItems.map(item => (
             <button
               key={item.id}
@@ -273,11 +298,11 @@ export default function AdminView({ isAdminAuthenticated, setIsAdminAuthenticate
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 min-w-[255px]">
           <div className="flex items-center justify-between px-2 mb-4">
             <div className="text-xs">
               <p className="text-slate-500 dark:text-slate-400 font-medium">Connecté(e)</p>
-              <p className="font-bold">{adminName}</p>
+              <p className="font-bold truncate max-w-[150px]">{adminName}</p>
             </div>
           </div>
           <button onClick={handleLogout}
@@ -288,8 +313,28 @@ export default function AdminView({ isAdminAuthenticated, setIsAdminAuthenticate
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 lg:p-10 overflow-y-auto">
-        {activeSection === 'dashboard' && <AdminDashboard students={students} />}
+      <main className="flex-1 h-full overflow-y-auto relative flex flex-col w-full">
+        {/* Mobile Header when sidebar is closed */}
+        <div className="p-4 lg:hidden flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+          <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-slate-600 dark:text-slate-300 rounded-lg">
+            <Menu className="h-6 w-6" />
+          </button>
+          <h1 className="font-display font-black text-lg">PyFlow Admin</h1>
+        </div>
+
+        {/* Desktop Toggle Button */}
+        <div className={`hidden lg:block absolute top-6 left-6 z-10 transition-all duration-300 ${isSidebarOpen ? 'opacity-0 pointer-events-none -translate-x-4' : 'opacity-100 translate-x-0'}`}>
+          <button 
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            title="Afficher le menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className={`flex-1 p-6 lg:p-10 transition-all duration-300 ${!isSidebarOpen ? 'lg:pl-20' : ''}`}>
+          {activeSection === 'dashboard' && <AdminDashboard students={students} />}
         {activeSection === 'students' && (
           <AdminStudents 
             students={students}
@@ -313,7 +358,11 @@ export default function AdminView({ isAdminAuthenticated, setIsAdminAuthenticate
           />
         )}
         {activeSection === 'content' && <AdminContent />}
+        {activeSection === 'documents' && <AdminDocuments />}
+        {activeSection === 'badges' && <AdminBadges />}
+        {activeSection === 'certificates' && <AdminCertificates />}
         {activeSection === 'settings' && <AdminSettings admins={admins} adminsLoading={adminsLoading} onRefreshAdmins={loadAdmins} />}
+        </div>
       </main>
     </div>
   );
